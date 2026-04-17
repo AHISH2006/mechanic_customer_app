@@ -18,6 +18,7 @@ android {
 
     kotlinOptions {
         jvmTarget = JavaVersion.VERSION_17.toString()
+
     }
 
     defaultConfig {
@@ -46,4 +47,11 @@ android {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    implementation(platform("com.google.firebase:firebase-bom:32.7.2"))
+    implementation("com.google.firebase:firebase-auth")
+    implementation("com.google.android.play:core:1.10.3")
+    implementation("androidx.multidex:multidex:2.0.1")
 }

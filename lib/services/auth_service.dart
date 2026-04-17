@@ -87,6 +87,11 @@ class AuthService {
     return doc.data();
   }
 
+  /// Get real-time user profile stream
+  Stream<DocumentSnapshot<Map<String, dynamic>>> get userProfileStream {
+    return _firestore.collection('users').doc(currentUser!.uid).snapshots();
+  }
+
   /// Sign out
   Future<void> signOut() async {
     await _auth.signOut();

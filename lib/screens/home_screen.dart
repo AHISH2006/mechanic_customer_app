@@ -21,64 +21,31 @@ class _HomeScreenState extends State<HomeScreen> {
   String _locationAddress = "";
   bool _isRequesting = false;
 
-  // Single instances — avoid re-creating on every method call
   final _locationService = LocationService();
   final _authService = AuthService();
   final _firebaseService = FirebaseService();
   final _notificationService = NotificationService();
-  String _userName = '';
-
-  Future<void> _loadUserName() async {
-    final profile = await _authService.getUserProfile();
-    if (profile != null && mounted) {
-      setState(() {
-        _userName = profile['name'] ?? '';
-      });
-    }
-  }
 
   @override
   void initState() {
     super.initState();
     _determinePosition();
-    _loadUserName();
   }
 
-  /// Discover the current location for UI display
   Future<void> _determinePosition() async {
-    bool serviceEnabled;
-    LocationPermission permission;
-
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
-      if (mounted) {
-        setState(() {
-          _locationStatus = 'Location services are disabled.';
-        });
-      }
+      if (mounted) setState(() => _locationStatus = 'Location services are disabled.');
       return;
     }
 
-    permission = await Geolocator.checkPermission();
+    LocationPermission permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied) {
-        if (mounted) {
-          setState(() {
-            _locationStatus = 'Location permissions are denied';
-          });
-        }
+        if (mounted) setState(() => _locationStatus = 'Location permissions are denied');
         return;
       }
-    }
-
-    if (permission == LocationPermission.deniedForever) {
-      if (mounted) {
-        setState(() {
-          _locationStatus = 'Location permissions are permanently denied.';
-        });
-      }
-      return;
     }
 
     try {
@@ -90,29 +57,17 @@ class _HomeScreenState extends State<HomeScreen> {
         });
       }
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          _locationStatus = 'Error getting location';
-        });
-      }
+      if (mounted) setState(() => _locationStatus = 'Error getting location');
     }
   }
 
   void _requestHelp() async {
-    setState(() {
-      _isRequesting = true;
-    });
-
+    setState(() => _isRequesting = true);
     try {
       final position = await _locationService.getLocation();
-
       if (!mounted) return;
+      setState(() => _isRequesting = false);
 
-      setState(() {
-        _isRequesting = false;
-      });
-
-      // Navigate to map picker and wait for confirmed location
       final LatLng? confirmedLocation = await Navigator.push<LatLng>(
         context,
         MaterialPageRoute(
@@ -123,19 +78,12 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       );
 
-      // If user confirmed a location, submit the request
       if (confirmedLocation != null && mounted) {
-        setState(() {
-          _isRequesting = true;
-        });
-
-        // 1. Send request to Firebase
+        setState(() => _isRequesting = true);
         final requestId = await _firebaseService.sendRequest(
           confirmedLocation.latitude,
           confirmedLocation.longitude,
         );
-
-        // 2. Send notification + queue email
         await _notificationService.sendRequestConfirmation(
           requestId: requestId,
           lat: confirmedLocation.latitude,
@@ -143,437 +91,167 @@ class _HomeScreenState extends State<HomeScreen> {
         );
 
         if (mounted) {
-          setState(() {
-            _isRequesting = false;
-          });
-
-          // Show success message
+          setState(() => _isRequesting = false);
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Row(
-                children: [
-                  Icon(Icons.check_circle, color: Colors.white, size: 20),
-                  SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      'Help request submitted! A confirmation email has been sent.',
-                    ),
-                  ),
-                ],
-              ),
-              backgroundColor: Color(0xFF43A047),
-              duration: Duration(seconds: 4),
+              content: Text('Help request submitted! A confirmation email has been sent.'),
+              backgroundColor: Colors.green,
             ),
           );
         }
       }
     } catch (e) {
-      debugPrint("Error requesting help: $e");
       if (mounted) {
-        setState(() {
-          _isRequesting = false;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to submit request: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        setState(() => _isRequesting = false);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed: $e'), backgroundColor: Colors.red));
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // MediaQuery.sizeOf avoids rebuilds when unrelated MediaQuery properties change
+    final theme = Theme.of(context);
     final screenSize = MediaQuery.sizeOf(context);
     final screenWidth = screenSize.width;
-    final screenHeight = screenSize.height;
-
-    // Responsive scaling factors
-    final isSmallPhone = screenWidth < 360;
-    final isTablet = screenWidth >= 600;
-
-    // Scaled values
-    final horizontalPadding = screenWidth * 0.06;
-    final verticalPadding = screenHeight * 0.02;
-
-    final locationIconSize = isTablet ? 40.0 : (isSmallPhone ? 24.0 : 32.0);
-    final locationLabelSize = isTablet ? 16.0 : (isSmallPhone ? 12.0 : 14.0);
-    final locationValueSize = isTablet ? 18.0 : (isSmallPhone ? 13.0 : 16.0);
-
-    final headingSize = isTablet ? 22.0 : (isSmallPhone ? 15.0 : 18.0);
-    final subHeadingSize = isTablet ? 16.0 : (isSmallPhone ? 12.0 : 14.0);
-
-    final emergencyButtonSize = isTablet
-        ? screenWidth * 0.35
-        : (isSmallPhone ? screenWidth * 0.45 : screenWidth * 0.5);
-    final emergencyIconSize = isTablet ? 56.0 : (isSmallPhone ? 36.0 : 48.0);
-    final emergencyTextSize = isTablet ? 26.0 : (isSmallPhone ? 16.0 : 22.0);
-
-    final sectionTitleSize = isTablet ? 18.0 : (isSmallPhone ? 13.0 : 16.0);
-    final cardTitleSize = isTablet ? 16.0 : (isSmallPhone ? 12.0 : 14.0);
-    final cardSubtitleSize = isTablet ? 14.0 : (isSmallPhone ? 10.0 : 12.0);
-
-    final sectionSpacing = screenHeight * 0.025;
-    final buttonSpacing = screenHeight * 0.04;
-
+    
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          "Mechanic Help",
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: isTablet ? 22.0 : (isSmallPhone ? 16.0 : 18.0),
-          ),
-        ),
+        title: const Text("Mechanic Help", style: TextStyle(fontWeight: FontWeight.bold)),
         centerTitle: true,
-        elevation: 0,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
         actions: [
-          // Notification Bell with unread badge
           StreamBuilder<QuerySnapshot>(
             stream: _notificationService.getUserNotifications(),
             builder: (context, snapshot) {
-              int unreadCount = 0;
-              if (snapshot.hasData) {
-                unreadCount = snapshot.data!.docs
-                    .where((doc) =>
-                        (doc.data() as Map<String, dynamic>)['read'] == false)
-                    .length;
-              }
-              return Stack(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.notifications_outlined, size: 24),
-                    tooltip: 'Notifications',
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const NotificationsScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  if (unreadCount > 0)
-                    Positioned(
-                      right: 6,
-                      top: 6,
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFE53935),
-                          shape: BoxShape.circle,
-                        ),
-                        constraints: const BoxConstraints(
-                          minWidth: 18,
-                          minHeight: 18,
-                        ),
-                        child: Text(
-                          unreadCount > 9 ? '9+' : '$unreadCount',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ),
-                ],
-              );
-            },
-          ),
-          // Logout button
-          IconButton(
-            icon: const Icon(Icons.logout_rounded, size: 22),
-            tooltip: 'Logout',
-            onPressed: () async {
-              final confirm = await showDialog<bool>(
-                context: context,
-                builder: (ctx) => AlertDialog(
-                  title: const Text('Logout'),
-                  content: const Text('Are you sure you want to logout?'),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(ctx, false),
-                      child: const Text('Cancel'),
-                    ),
-                    TextButton(
-                      onPressed: () => Navigator.pop(ctx, true),
-                      child: const Text('Logout', style: TextStyle(color: Colors.red)),
-                    ),
-                  ],
+              int unreadCount = snapshot.hasData ? snapshot.data!.docs.where((doc) => (doc.data() as Map)['read'] == false).length : 0;
+              return IconButton(
+                icon: Badge(
+                  label: unreadCount > 0 ? Text('$unreadCount') : null,
+                  isLabelVisible: unreadCount > 0,
+                  child: const Icon(Icons.notifications_outlined),
                 ),
+                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsScreen())),
               );
-              if (confirm == true) {
-                await _authService.signOut();
-              }
             },
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: 8),
         ],
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: horizontalPadding,
-              vertical: verticalPadding,
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Welcome Greeting (Real-time)
+            StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+              stream: _authService.userProfileStream,
+              builder: (context, snapshot) {
+                final name = snapshot.data?.data()?['name'] ?? '';
+                if (name.isEmpty) return const SizedBox();
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text("Hi, $name 👋", style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                    const Text("How can we help you today?", style: TextStyle(color: Colors.grey)),
+                    const SizedBox(height: 20),
+                  ],
+                );
+              },
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Welcome Greeting
-                if (_userName.isNotEmpty) ...[
-                  Text(
-                    "Hi, $_userName 👋",
-                    style: TextStyle(
-                      fontSize: headingSize + 2,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    "How can we help you today?",
-                    style: TextStyle(
-                      fontSize: subHeadingSize,
-                      color: Colors.grey[500],
-                    ),
-                  ),
-                  SizedBox(height: sectionSpacing),
-                ],
 
-                // Location Section
-                Container(
-                  padding: EdgeInsets.all(screenWidth * 0.04),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Color.fromRGBO(0, 0, 0, 0.05),
-                        blurRadius: 10,
-                        offset: Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.location_on, color: Colors.red, size: locationIconSize),
-                      SizedBox(width: screenWidth * 0.04),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "Your Location:",
-                              style: TextStyle(
-                                color: Colors.grey[600],
-                                fontSize: locationLabelSize,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              _locationAddress.isNotEmpty ? _locationAddress : _locationStatus,
-                              style: TextStyle(
-                                color: Colors.black87,
-                                fontSize: locationValueSize,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                SizedBox(height: sectionSpacing),
-
-                // Quick Action / Emergency Area
-                Center(
-                  child: Column(
-                    children: [
-                      Text(
-                        "Need immediate assistance?",
-                        style: TextStyle(
-                          fontSize: headingSize,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      SizedBox(height: screenHeight * 0.01),
-                      Text(
-                        "Tap the button below to alert mechanics nearby.",
-                        style: TextStyle(
-                          fontSize: subHeadingSize,
-                          color: Colors.grey[600],
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                ),
-
-                SizedBox(height: buttonSpacing),
-
-                // Big Emergency Button
-                Center(
-                  child: Container(
-                    width: emergencyButtonSize,
-                    height: emergencyButtonSize,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Color.fromRGBO(244, 67, 54, 0.3),
-                          blurRadius: 30,
-                          spreadRadius: 10,
-                        ),
+            // Location Section
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: theme.cardColor,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.location_on, color: Colors.red, size: 32),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text("Your Location:", style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w500)),
+                        Text(_locationAddress.isNotEmpty ? _locationAddress : _locationStatus, style: const TextStyle(fontWeight: FontWeight.bold)),
                       ],
                     ),
-                    child: ElevatedButton(
-                      onPressed: _isRequesting ? null : _requestHelp,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
-                        foregroundColor: Colors.white,
-                        shape: const CircleBorder(),
-                        elevation: 5,
-                        padding: EdgeInsets.zero,
-                      ),
-                      child: _isRequesting
-                          ? const CircularProgressIndicator(color: Colors.white)
-                          : Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.warning_amber_rounded, size: emergencyIconSize),
-                                SizedBox(height: screenHeight * 0.008),
-                                Text(
-                                  "REQUEST\nHELP",
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontSize: emergencyTextSize,
-                                    fontWeight: FontWeight.bold,
-                                    letterSpacing: 1.2,
-                                  ),
-                                ),
-                              ],
-                            ),
-                    ),
                   ),
-                ),
+                ],
+              ),
+            ),
 
-                SizedBox(height: sectionSpacing),
+            const SizedBox(height: 40),
+            const Text("Need immediate assistance?", textAlign: TextAlign.center, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            const Text("Tap the button below to alert mechanics nearby.", textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)),
+            const SizedBox(height: 40),
 
-                // Recent Requests Section
-                const Divider(),
-                SizedBox(height: screenHeight * 0.015),
-                Text(
-                  "Recent Requests",
-                  style: TextStyle(
-                    fontSize: sectionTitleSize,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+            // Emergency Button
+            Center(
+              child: GestureDetector(
+                onTap: _isRequesting ? null : _requestHelp,
+                child: Container(
+                  width: screenWidth * 0.5,
+                  height: screenWidth * 0.5,
+                  decoration: BoxDecoration(
+                    color: Colors.red,
+                    shape: BoxShape.circle,
+                    boxShadow: [BoxShadow(color: Colors.red.withOpacity(0.3), blurRadius: 30, spreadRadius: 10)],
                   ),
-                ),
-                SizedBox(height: screenHeight * 0.012),
-
-                // Firebase Stream for Recent Requests
-                StreamBuilder<QuerySnapshot>(
-                  stream: FirebaseFirestore.instance
-                      .collection('requests')
-                      .orderBy('time', descending: true)
-                      .limit(3)
-                      .snapshots(),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-
-                    if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                      return Container(
-                        padding: EdgeInsets.all(screenWidth * 0.04),
-                        decoration: BoxDecoration(
-                          color: Colors.grey[100],
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Row(
+                  child: Center(
+                    child: _isRequesting 
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.history, color: Colors.grey[400], size: isTablet ? 28 : 24),
-                            SizedBox(width: screenWidth * 0.03),
-                            Expanded(
-                              child: Text(
-                                "No previous requests.",
-                                style: TextStyle(
-                                  color: Colors.grey[600],
-                                  fontSize: subHeadingSize,
-                                ),
-                              ),
-                            ),
+                            Icon(Icons.warning_amber_rounded, size: 48, color: Colors.white),
+                            SizedBox(height: 8),
+                            Text("REQUEST\nHELP", textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
                           ],
                         ),
-                      );
-                    }
-
-                    return Column(
-                      children: snapshot.data!.docs.map((doc) {
-                        final data = doc.data() as Map<String, dynamic>;
-                        final status = data['status'] ?? 'unknown';
-                        final time = data['time'] as Timestamp?;
-                        final dateStr = time != null
-                            ? "${time.toDate().day}/${time.toDate().month} ${time.toDate().hour}:${time.toDate().minute.toString().padLeft(2, '0')}"
-                            : "Unknown time";
-
-                        return Card(
-                          margin: EdgeInsets.only(bottom: screenHeight * 0.008),
-                          elevation: 0,
-                          color: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            side: BorderSide(color: Colors.grey.shade200),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: ListTile(
-                            contentPadding: EdgeInsets.symmetric(
-                              horizontal: screenWidth * 0.04,
-                              vertical: screenHeight * 0.005,
-                            ),
-                            leading: CircleAvatar(
-                              radius: isTablet ? 24 : (isSmallPhone ? 16 : 20),
-                              backgroundColor: status == 'waiting' ? Colors.orange.shade100 : Colors.green.shade100,
-                              child: Icon(
-                                status == 'waiting' ? Icons.access_time : Icons.check_circle,
-                                color: status == 'waiting' ? Colors.orange : Colors.green,
-                                size: isTablet ? 24 : (isSmallPhone ? 16 : 20),
-                              ),
-                            ),
-                            title: Text(
-                              "Status: ${status.toUpperCase()}",
-                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: cardTitleSize),
-                            ),
-                            subtitle: Text(
-                              dateStr,
-                              style: TextStyle(color: Colors.grey[600], fontSize: cardSubtitleSize),
-                            ),
-                            trailing: Icon(
-                              Icons.chevron_right,
-                              color: Colors.grey,
-                              size: isTablet ? 28 : 24,
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    );
-                  },
+                  ),
                 ),
-                SizedBox(height: screenHeight * 0.02),
-              ],
+              ),
             ),
-          ),
+
+            const SizedBox(height: 40),
+            const Divider(),
+            const SizedBox(height: 20),
+            const Text("Recent Requests", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
+
+            // Recent Requests Stream (Filtered by User)
+            StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('requests')
+                  .where('userId', isEqualTo: _authService.currentUser?.uid)
+                  .orderBy('time', descending: true)
+                  .limit(3)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return const Text("No previous requests.", style: TextStyle(color: Colors.grey));
+                }
+                return Column(
+                  children: snapshot.data!.docs.map((doc) {
+                    final data = doc.data() as Map<String, dynamic>;
+                    final status = data['status'] ?? 'waiting';
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 10),
+                      child: ListTile(
+                        leading: Icon(status == 'waiting' ? Icons.access_time : Icons.check_circle, color: status == 'waiting' ? Colors.orange : Colors.green),
+                        title: Text("Status: ${status.toString().toUpperCase()}", style: const TextStyle(fontWeight: FontWeight.bold)),
+                        subtitle: Text(snapshot.data?.docs.first == doc ? "Latest Request" : "Previous Request"),
+                        trailing: const Icon(Icons.chevron_right),
+                      ),
+                    );
+                  }).toList(),
+                );
+              },
+            ),
+          ],
         ),
       ),
     );

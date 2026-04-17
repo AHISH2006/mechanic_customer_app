@@ -188,13 +188,13 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                     Container(
                       padding: EdgeInsets.all(isTablet ? 32 : (isSmallPhone ? 20 : 24)),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: Theme.of(context).cardColor,
                         borderRadius: BorderRadius.circular(20),
-                        boxShadow: const [
+                        boxShadow: [
                           BoxShadow(
-                            color: Color.fromRGBO(0, 0, 0, 0.15),
+                            color: Colors.black.withOpacity(0.15),
                             blurRadius: 30,
-                            offset: Offset(0, 10),
+                            offset: const Offset(0, 10),
                           ),
                         ],
                       ),
@@ -203,12 +203,11 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            Text(
+                            const Text(
                               "Welcome Back",
                               style: TextStyle(
-                                fontSize: isTablet ? 24 : (isSmallPhone ? 18 : 22),
+                                fontSize: 22,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.black87,
                               ),
                             ),
                             const SizedBox(height: 4),
@@ -403,15 +402,15 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       hintText: hint,
       prefixIcon: Icon(icon, color: Colors.grey[500], size: 20),
       filled: true,
-      fillColor: Colors.grey[50],
+      fillColor: Theme.of(context).cardColor.withOpacity(0.5),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.grey.shade300),
+        borderSide: BorderSide(color: Colors.grey.withOpacity(0.3)),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.grey.shade300),
+        borderSide: BorderSide(color: Colors.grey.withOpacity(0.3)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),

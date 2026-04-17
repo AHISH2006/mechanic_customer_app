@@ -212,13 +212,13 @@ class _RegistrationScreenState extends State<RegistrationScreen> with SingleTick
                   Container(
                     padding: EdgeInsets.all(isTablet ? 28 : (isSmallPhone ? 18 : 22)),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: Theme.of(context).cardColor,
                       borderRadius: BorderRadius.circular(20),
-                      boxShadow: const [
+                      boxShadow: [
                         BoxShadow(
-                          color: Color.fromRGBO(0, 0, 0, 0.15),
+                          color: Colors.black.withOpacity(0.15),
                           blurRadius: 30,
-                          offset: Offset(0, 10),
+                          offset: const Offset(0, 10),
                         ),
                       ],
                     ),
@@ -564,7 +564,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> with SingleTick
         Container(
           padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
-            color: const Color(0xFFE53935).withAlpha(20),
+            color: const Color(0xFFE53935).withOpacity(0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(icon, color: const Color(0xFFE53935), size: 18),
@@ -572,10 +572,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> with SingleTick
         const SizedBox(width: 10),
         Text(
           title,
-          style: TextStyle(
-            fontSize: isTablet ? 18 : 16,
+          style: const TextStyle(
+            fontSize: 16,
             fontWeight: FontWeight.w700,
-            color: Colors.black87,
           ),
         ),
       ],
@@ -592,15 +591,15 @@ class _RegistrationScreenState extends State<RegistrationScreen> with SingleTick
       hintText: hint,
       prefixIcon: Icon(icon, color: Colors.grey[500], size: 20),
       filled: true,
-      fillColor: Colors.grey[50],
+      fillColor: Theme.of(context).cardColor.withOpacity(0.5),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.grey.shade300),
+        borderSide: BorderSide(color: Colors.grey.withOpacity(0.3)),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.grey.shade300),
+        borderSide: BorderSide(color: Colors.grey.withOpacity(0.3)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
