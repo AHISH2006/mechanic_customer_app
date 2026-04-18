@@ -26,7 +26,8 @@ class NotificationService {
     await _firestore.collection('notifications').add({
       'userId': user.uid,
       'title': 'Help Request Submitted',
-      'body': 'Your mechanic help request has been submitted successfully. '
+      'body':
+          'Your mechanic help request has been submitted successfully. '
           'A nearby mechanic will be assigned to you shortly.',
       'type': 'request_submitted',
       'requestId': requestId,
@@ -40,8 +41,10 @@ class NotificationService {
       await _firestore.collection('mail').add({
         'to': [userEmail],
         'message': {
-          'subject': '🔧 Mechanic Help — Request Confirmed (#${requestId.substring(0, 6)})',
-          'html': '''
+          'subject':
+              '🔧 Mechanic Help — Request Confirmed (#${requestId.substring(0, 6)})',
+          'html':
+              '''
 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
   <div style="background: linear-gradient(135deg, #E53935, #C62828); padding: 24px; border-radius: 12px 12px 0 0;">
     <h1 style="color: white; margin: 0; font-size: 24px;">🔧 Mechanic Help</h1>
@@ -111,10 +114,9 @@ class NotificationService {
 
   /// Mark a notification as read
   Future<void> markAsRead(String notificationId) async {
-    await _firestore
-        .collection('notifications')
-        .doc(notificationId)
-        .update({'read': true});
+    await _firestore.collection('notifications').doc(notificationId).update({
+      'read': true,
+    });
   }
 
   /// Mark all notifications as read

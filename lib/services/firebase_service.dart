@@ -6,7 +6,7 @@ class FirebaseService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   /// Send a help request and return the request document ID
-  Future<String> sendRequest(double lat, double lng) async {
+  Future<String> sendRequest(double lat, double lng, String address) async {
     final user = _auth.currentUser;
 
     // Fetch user profile for vehicle info
@@ -19,6 +19,7 @@ class FirebaseService {
     final docRef = await _firestore.collection('requests').add({
       'lat': lat,
       'lng': lng,
+      'address': address,
       'status': 'waiting',
       'time': FieldValue.serverTimestamp(),
       'userId': user?.uid ?? '',
@@ -32,5 +33,42 @@ class FirebaseService {
     });
 
     return docRef.id;
+  }
+
+  /// Submit a rating and review for a request
+  Future<void> submitReview(String requestId, double rating, String review) async {
+    await _firestore.collection('requests').doc(requestId).update({
+      'rating': rating,
+      'review': review,
+      'reviewedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  /// Get the most recent active request for the current user
+  Stream<QuerySnapshot> getActiveRequestStream() {
+    final user = _auth.currentUser;
+    if (user == null) return const Stream.empty();
+
+    // No orderBy — avoids composite index requirement. Sort client-side.
+    return _firestore
+        .collection('requests')
+        .where('userId', isEqualTo: user.uid)
+        .where('status', whereIn: ['waiting', 'accepted', 'arriving', 'in_progress'])
+        .limit(5)
+        .snapshots();
+  }
+
+  /// SIMULATION: Simulate a mechanic accepting the request
+  /// In a real app, this would be done by the Mechanic App.
+  Future<void> simulateAcceptance(String requestId) async {
+    await _firestore.collection('requests').doc(requestId).update({
+      'status': 'accepted',
+      'mechanicId': 'test_mechanic_123',
+      'mechanicName': 'Ramesh Mechanic',
+      'mechanicPhone': '+91 98765 43210',
+      'mechanicLat': 13.0827, // Sample Chennai coordinates
+      'mechanicLng': 80.2707,
+      'acceptedAt': FieldValue.serverTimestamp(),
+    });
   }
 }

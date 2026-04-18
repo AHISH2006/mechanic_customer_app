@@ -10,7 +10,8 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStateMixin {
+class _LoginScreenState extends State<LoginScreen>
+    with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -35,13 +36,10 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       parent: _animController,
       curve: Curves.easeOut,
     );
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.15),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _animController,
-      curve: Curves.easeOutCubic,
-    ));
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.15), end: Offset.zero).animate(
+          CurvedAnimation(parent: _animController, curve: Curves.easeOutCubic),
+        );
     _animController.forward();
   }
 
@@ -186,13 +184,15 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
 
                     // Login Card
                     Container(
-                      padding: EdgeInsets.all(isTablet ? 32 : (isSmallPhone ? 20 : 24)),
+                      padding: EdgeInsets.all(
+                        isTablet ? 32 : (isSmallPhone ? 20 : 24),
+                      ),
                       decoration: BoxDecoration(
                         color: Theme.of(context).cardColor,
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.15),
+                            color: Colors.black.withValues(alpha: 0.15),
                             blurRadius: 30,
                             offset: const Offset(0, 10),
                           ),
@@ -227,11 +227,17 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                                 decoration: BoxDecoration(
                                   color: Colors.red.shade50,
                                   borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(color: Colors.red.shade200),
+                                  border: Border.all(
+                                    color: Colors.red.shade200,
+                                  ),
                                 ),
                                 child: Row(
                                   children: [
-                                    Icon(Icons.error_outline, color: Colors.red.shade700, size: 20),
+                                    Icon(
+                                      Icons.error_outline,
+                                      color: Colors.red.shade700,
+                                      size: 20,
+                                    ),
                                     const SizedBox(width: 10),
                                     Expanded(
                                       child: Text(
@@ -262,7 +268,9 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                                 if (value == null || value.trim().isEmpty) {
                                   return 'Please enter your email';
                                 }
-                                if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value.trim())) {
+                                if (!RegExp(
+                                  r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                                ).hasMatch(value.trim())) {
                                   return 'Please enter a valid email';
                                 }
                                 return null;
@@ -276,24 +284,27 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                               obscureText: _obscurePassword,
                               textInputAction: TextInputAction.done,
                               onFieldSubmitted: (_) => _login(),
-                              decoration: _inputDecoration(
-                                label: "Password",
-                                hint: "Enter your password",
-                                icon: Icons.lock_outline,
-                              ).copyWith(
-                                suffixIcon: IconButton(
-                                  icon: Icon(
-                                    _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                                    color: Colors.grey[500],
-                                    size: 20,
+                              decoration:
+                                  _inputDecoration(
+                                    label: "Password",
+                                    hint: "Enter your password",
+                                    icon: Icons.lock_outline,
+                                  ).copyWith(
+                                    suffixIcon: IconButton(
+                                      icon: Icon(
+                                        _obscurePassword
+                                            ? Icons.visibility_off_outlined
+                                            : Icons.visibility_outlined,
+                                        color: Colors.grey[500],
+                                        size: 20,
+                                      ),
+                                      onPressed: () {
+                                        setState(() {
+                                          _obscurePassword = !_obscurePassword;
+                                        });
+                                      },
+                                    ),
                                   ),
-                                  onPressed: () {
-                                    setState(() {
-                                      _obscurePassword = !_obscurePassword;
-                                    });
-                                  },
-                                ),
-                              ),
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
                                   return 'Please enter your password';
@@ -314,9 +325,16 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: const Color(0xFFE53935),
                                   foregroundColor: Colors.white,
-                                  disabledBackgroundColor: const Color(0xFFE57373),
+                                  disabledBackgroundColor: const Color(
+                                    0xFFE57373,
+                                  ),
                                   elevation: 2,
-                                  shadowColor: const Color.fromRGBO(229, 57, 53, 0.4),
+                                  shadowColor: const Color.fromRGBO(
+                                    229,
+                                    57,
+                                    53,
+                                    0.4,
+                                  ),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(14),
                                   ),
@@ -402,15 +420,15 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       hintText: hint,
       prefixIcon: Icon(icon, color: Colors.grey[500], size: 20),
       filled: true,
-      fillColor: Theme.of(context).cardColor.withOpacity(0.5),
+      fillColor: Theme.of(context).cardColor.withValues(alpha: 0.5),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.grey.withOpacity(0.3)),
+        borderSide: BorderSide(color: Colors.grey.withValues(alpha: 0.3)),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.grey.withOpacity(0.3)),
+        borderSide: BorderSide(color: Colors.grey.withValues(alpha: 0.3)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),

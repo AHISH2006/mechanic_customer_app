@@ -30,8 +30,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         ),
         centerTitle: true,
         elevation: 0,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
         actions: [
           TextButton(
             onPressed: () async {
@@ -53,6 +51,19 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(
               child: CircularProgressIndicator(color: Color(0xFFE53935)),
+            );
+          }
+
+          if (snapshot.hasError) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Text(
+                  "Error: ${snapshot.error}",
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Colors.red),
+                ),
+              ),
             );
           }
 
@@ -152,10 +163,20 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 child: Container(
                   padding: EdgeInsets.all(isTablet ? 18 : 14),
                   decoration: BoxDecoration(
-                    color: isRead ? Colors.white : const Color(0xFFFFF3F3),
+                    color: isRead
+                        ? Theme.of(context).cardColor
+                        : Theme.of(
+                            context,
+                          ).primaryColor.withValues(alpha: 0.05),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: isRead ? Colors.grey.shade200 : const Color(0xFFFFCDD2),
+                      color: isRead
+                          ? Theme.of(
+                              context,
+                            ).dividerColor.withValues(alpha: 0.1)
+                          : Theme.of(
+                              context,
+                            ).primaryColor.withValues(alpha: 0.2),
                     ),
                     boxShadow: isRead
                         ? null
@@ -177,7 +198,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                           color: iconBg,
                           shape: BoxShape.circle,
                         ),
-                        child: Icon(icon, color: iconColor, size: isTablet ? 24 : 20),
+                        child: Icon(
+                          icon,
+                          color: iconColor,
+                          size: isTablet ? 24 : 20,
+                        ),
                       ),
                       const SizedBox(width: 12),
 
@@ -193,8 +218,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                     title,
                                     style: TextStyle(
                                       fontSize: isTablet ? 16 : 14,
-                                      fontWeight: isRead ? FontWeight.w500 : FontWeight.bold,
-                                      color: Colors.black87,
+                                      fontWeight: isRead
+                                          ? FontWeight.w500
+                                          : FontWeight.bold,
+                                      color: Theme.of(
+                                        context,
+                                      ).textTheme.bodyLarge?.color,
                                     ),
                                   ),
                                 ),

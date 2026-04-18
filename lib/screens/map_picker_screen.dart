@@ -25,10 +25,7 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
   void initState() {
     super.initState();
     _selectedLocation = LatLng(widget.currentLat, widget.currentLng);
-    _initialPosition = CameraPosition(
-      target: _selectedLocation,
-      zoom: 16.0,
-    );
+    _initialPosition = CameraPosition(target: _selectedLocation, zoom: 16.0);
   }
 
   @override
@@ -57,7 +54,9 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
         desiredAccuracy: LocationAccuracy.high,
       );
       final myLocation = LatLng(position.latitude, position.longitude);
-      _mapController?.animateCamera(CameraUpdate.newLatLngZoom(myLocation, 16.0));
+      _mapController?.animateCamera(
+        CameraUpdate.newLatLngZoom(myLocation, 16.0),
+      );
       _selectedLocation = myLocation;
     } catch (e) {
       if (mounted) {
@@ -108,8 +107,6 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
             fontSize: isTablet ? 22.0 : (isSmallPhone ? 16.0 : 18.0),
           ),
         ),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
         elevation: 0,
       ),
       body: Stack(
@@ -131,11 +128,7 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
           Center(
             child: Padding(
               padding: EdgeInsets.only(bottom: pinSize * 0.8),
-              child: Icon(
-                Icons.location_pin,
-                color: Colors.red,
-                size: pinSize,
-              ),
+              child: Icon(Icons.location_pin, color: Colors.red, size: pinSize),
             ),
           ),
 
@@ -153,7 +146,11 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
                     onPressed: _goToCurrentLocation,
                     backgroundColor: Colors.blue,
                     mini: true,
-                    child: Icon(Icons.my_location, color: Colors.white, size: fabIconSize),
+                    child: Icon(
+                      Icons.my_location,
+                      color: Colors.white,
+                      size: fabIconSize,
+                    ),
                   ),
                 ),
                 SizedBox(height: fabSpacing),
@@ -165,7 +162,11 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
                     onPressed: _zoomIn,
                     backgroundColor: Colors.white,
                     mini: true,
-                    child: Icon(Icons.add, color: Colors.black87, size: fabIconSize),
+                    child: Icon(
+                      Icons.add,
+                      color: Colors.black87,
+                      size: fabIconSize,
+                    ),
                   ),
                 ),
                 SizedBox(height: fabSpacing * 0.5),
@@ -177,7 +178,11 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
                     onPressed: _zoomOut,
                     backgroundColor: Colors.white,
                     mini: true,
-                    child: Icon(Icons.remove, color: Colors.black87, size: fabIconSize),
+                    child: Icon(
+                      Icons.remove,
+                      color: Colors.black87,
+                      size: fabIconSize,
+                    ),
                   ),
                 ),
               ],
@@ -191,14 +196,14 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
             right: bottomCardMarginH,
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).cardColor,
                 borderRadius: BorderRadius.circular(bottomCardRadius),
                 boxShadow: const [
                   BoxShadow(
                     color: Color.fromRGBO(0, 0, 0, 0.1),
                     blurRadius: 20,
                     offset: Offset(0, 5),
-                  )
+                  ),
                 ],
               ),
               padding: EdgeInsets.all(bottomCardPadding),
@@ -229,7 +234,9 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.red,
                         foregroundColor: Colors.white,
-                        padding: EdgeInsets.symmetric(vertical: buttonVerticalPad),
+                        padding: EdgeInsets.symmetric(
+                          vertical: buttonVerticalPad,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),

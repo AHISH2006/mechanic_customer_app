@@ -9,7 +9,8 @@ class RegistrationScreen extends StatefulWidget {
   State<RegistrationScreen> createState() => _RegistrationScreenState();
 }
 
-class _RegistrationScreenState extends State<RegistrationScreen> with SingleTickerProviderStateMixin {
+class _RegistrationScreenState extends State<RegistrationScreen>
+    with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _authService = AuthService();
 
@@ -151,11 +152,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> with SingleTick
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              Color(0xFFE53935),
-              Color(0xFFC62828),
-              Color(0xFF8E0000),
-            ],
+            colors: [Color(0xFFE53935), Color(0xFFC62828), Color(0xFF8E0000)],
           ),
         ),
         child: SafeArea(
@@ -178,7 +175,11 @@ class _RegistrationScreenState extends State<RegistrationScreen> with SingleTick
                             color: const Color.fromRGBO(255, 255, 255, 0.15),
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          child: const Icon(Icons.arrow_back, color: Colors.white, size: 22),
+                          child: const Icon(
+                            Icons.arrow_back,
+                            color: Colors.white,
+                            size: 22,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -188,7 +189,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> with SingleTick
                           Text(
                             "Create Account",
                             style: TextStyle(
-                              fontSize: isTablet ? 28 : (isSmallPhone ? 20 : 24),
+                              fontSize: isTablet
+                                  ? 28
+                                  : (isSmallPhone ? 20 : 24),
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
                             ),
@@ -210,13 +213,15 @@ class _RegistrationScreenState extends State<RegistrationScreen> with SingleTick
 
                   // Registration Form Card
                   Container(
-                    padding: EdgeInsets.all(isTablet ? 28 : (isSmallPhone ? 18 : 22)),
+                    padding: EdgeInsets.all(
+                      isTablet ? 28 : (isSmallPhone ? 18 : 22),
+                    ),
                     decoration: BoxDecoration(
                       color: Theme.of(context).cardColor,
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.15),
+                          color: Colors.black.withValues(alpha: 0.15),
                           blurRadius: 30,
                           offset: const Offset(0, 10),
                         ),
@@ -238,12 +243,19 @@ class _RegistrationScreenState extends State<RegistrationScreen> with SingleTick
                               ),
                               child: Row(
                                 children: [
-                                  Icon(Icons.error_outline, color: Colors.red.shade700, size: 20),
+                                  Icon(
+                                    Icons.error_outline,
+                                    color: Colors.red.shade700,
+                                    size: 20,
+                                  ),
                                   const SizedBox(width: 10),
                                   Expanded(
                                     child: Text(
                                       _errorMessage!,
-                                      style: TextStyle(color: Colors.red.shade700, fontSize: 13),
+                                      style: TextStyle(
+                                        color: Colors.red.shade700,
+                                        fontSize: 13,
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -296,7 +308,10 @@ class _RegistrationScreenState extends State<RegistrationScreen> with SingleTick
                               if (value == null || value.trim().isEmpty) {
                                 return 'Phone number is required';
                               }
-                              final cleaned = value.trim().replaceAll(RegExp(r'[\s\-\(\)\+]'), '');
+                              final cleaned = value.trim().replaceAll(
+                                RegExp(r'[\s\-\(\)\+]'),
+                                '',
+                              );
                               if (cleaned.length < 10) {
                                 return 'Enter a valid phone number';
                               }
@@ -319,7 +334,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> with SingleTick
                               if (value == null || value.trim().isEmpty) {
                                 return 'Please enter your email';
                               }
-                              if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value.trim())) {
+                              if (!RegExp(
+                                r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                              ).hasMatch(value.trim())) {
                                 return 'Please enter a valid email';
                               }
                               return null;
@@ -332,24 +349,27 @@ class _RegistrationScreenState extends State<RegistrationScreen> with SingleTick
                             controller: _passwordController,
                             obscureText: _obscurePassword,
                             textInputAction: TextInputAction.next,
-                            decoration: _inputDecoration(
-                              label: "Password",
-                              hint: "Min. 6 characters",
-                              icon: Icons.lock_outline,
-                            ).copyWith(
-                              suffixIcon: IconButton(
-                                icon: Icon(
-                                  _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                                  color: Colors.grey[500],
-                                  size: 20,
+                            decoration:
+                                _inputDecoration(
+                                  label: "Password",
+                                  hint: "Min. 6 characters",
+                                  icon: Icons.lock_outline,
+                                ).copyWith(
+                                  suffixIcon: IconButton(
+                                    icon: Icon(
+                                      _obscurePassword
+                                          ? Icons.visibility_off_outlined
+                                          : Icons.visibility_outlined,
+                                      color: Colors.grey[500],
+                                      size: 20,
+                                    ),
+                                    onPressed: () {
+                                      setState(() {
+                                        _obscurePassword = !_obscurePassword;
+                                      });
+                                    },
+                                  ),
                                 ),
-                                onPressed: () {
-                                  setState(() {
-                                    _obscurePassword = !_obscurePassword;
-                                  });
-                                },
-                              ),
-                            ),
                             validator: (value) {
                               if (value == null || value.isEmpty) {
                                 return 'Please enter a password';
@@ -367,24 +387,27 @@ class _RegistrationScreenState extends State<RegistrationScreen> with SingleTick
                             controller: _confirmPasswordController,
                             obscureText: _obscureConfirm,
                             textInputAction: TextInputAction.next,
-                            decoration: _inputDecoration(
-                              label: "Confirm Password",
-                              hint: "Re-enter your password",
-                              icon: Icons.lock_outline,
-                            ).copyWith(
-                              suffixIcon: IconButton(
-                                icon: Icon(
-                                  _obscureConfirm ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                                  color: Colors.grey[500],
-                                  size: 20,
+                            decoration:
+                                _inputDecoration(
+                                  label: "Confirm Password",
+                                  hint: "Re-enter your password",
+                                  icon: Icons.lock_outline,
+                                ).copyWith(
+                                  suffixIcon: IconButton(
+                                    icon: Icon(
+                                      _obscureConfirm
+                                          ? Icons.visibility_off_outlined
+                                          : Icons.visibility_outlined,
+                                      color: Colors.grey[500],
+                                      size: 20,
+                                    ),
+                                    onPressed: () {
+                                      setState(() {
+                                        _obscureConfirm = !_obscureConfirm;
+                                      });
+                                    },
+                                  ),
                                 ),
-                                onPressed: () {
-                                  setState(() {
-                                    _obscureConfirm = !_obscureConfirm;
-                                  });
-                                },
-                              ),
-                            ),
                             validator: (value) {
                               if (value == null || value.isEmpty) {
                                 return 'Please confirm your password';
@@ -484,9 +507,16 @@ class _RegistrationScreenState extends State<RegistrationScreen> with SingleTick
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFFE53935),
                                 foregroundColor: Colors.white,
-                                disabledBackgroundColor: const Color(0xFFE57373),
+                                disabledBackgroundColor: const Color(
+                                  0xFFE57373,
+                                ),
                                 elevation: 2,
-                                shadowColor: const Color.fromRGBO(229, 57, 53, 0.4),
+                                shadowColor: const Color.fromRGBO(
+                                  229,
+                                  57,
+                                  53,
+                                  0.4,
+                                ),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(14),
                                 ),
@@ -564,7 +594,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> with SingleTick
         Container(
           padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
-            color: const Color(0xFFE53935).withOpacity(0.1),
+            color: const Color(0xFFE53935).withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(icon, color: const Color(0xFFE53935), size: 18),
@@ -572,10 +602,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> with SingleTick
         const SizedBox(width: 10),
         Text(
           title,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-          ),
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
         ),
       ],
     );
@@ -591,15 +618,15 @@ class _RegistrationScreenState extends State<RegistrationScreen> with SingleTick
       hintText: hint,
       prefixIcon: Icon(icon, color: Colors.grey[500], size: 20),
       filled: true,
-      fillColor: Theme.of(context).cardColor.withOpacity(0.5),
+      fillColor: Theme.of(context).cardColor.withValues(alpha: 0.5),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.grey.withOpacity(0.3)),
+        borderSide: BorderSide(color: Colors.grey.withValues(alpha: 0.3)),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.grey.withOpacity(0.3)),
+        borderSide: BorderSide(color: Colors.grey.withValues(alpha: 0.3)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),

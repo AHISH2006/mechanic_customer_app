@@ -83,13 +83,20 @@ class AuthService {
   /// Get user profile from Firestore
   Future<Map<String, dynamic>?> getUserProfile() async {
     if (currentUser == null) return null;
-    final doc = await _firestore.collection('users').doc(currentUser!.uid).get();
+    final doc = await _firestore
+        .collection('users')
+        .doc(currentUser!.uid)
+        .get();
     return doc.data();
   }
 
   /// Get real-time user profile stream
   Stream<DocumentSnapshot<Map<String, dynamic>>> get userProfileStream {
-    return _firestore.collection('users').doc(currentUser!.uid).snapshots();
+    final uid = currentUser?.uid;
+    if (uid == null) {
+      return const Stream.empty();
+    }
+    return _firestore.collection('users').doc(uid).snapshots();
   }
 
   /// Sign out
