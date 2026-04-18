@@ -1,4 +1,8 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/auth_service.dart';
 
 class EditProfileScreen extends StatefulWidget {
@@ -15,6 +19,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late TextEditingController _phoneController;
   final AuthService _authService = AuthService();
   bool _isLoading = false;
+  File? _selectedImage;
+  String? _profileImageUrl;
+  final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
@@ -25,6 +32,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _phoneController = TextEditingController(
       text: widget.initialProfile['phone'],
     );
+    _profileImageUrl = widget.initialProfile['profileImageUrl'];
   }
 
   @override
@@ -32,6 +40,18 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _nameController.dispose();
     _phoneController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickImage() async {
+    final XFile? pickedFile = await _picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 50,
+    );
+    if (pickedFile != null) {
+      setState(() {
+        _selectedImage = File(pickedFile.path);
+      });
+    }
   }
 
   Future<void> _updateProfile() async {
@@ -51,6 +71,22 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           vehicleModel: widget.initialProfile['vehicleModel'],
           licensePlate: widget.initialProfile['licensePlate'],
         );
+
+        // Upload Profile Photo if changed
+        if (_selectedImage != null) {
+          final storageRef = FirebaseStorage.instance
+              .ref()
+              .child('profile_images')
+              .child('${user.uid}.jpg');
+          await storageRef.putFile(_selectedImage!);
+          final downloadUrl = await storageRef.getDownloadURL();
+          
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .set({'profileImageUrl': downloadUrl}, SetOptions(merge: true));
+        }
+
         if (mounted) {
           Navigator.pop(context, true);
           ScaffoldMessenger.of(context).showSnackBar(
@@ -88,10 +124,41 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           key: _formKey,
           child: Column(
             children: [
-              const CircleAvatar(
-                radius: 50,
-                backgroundColor: Colors.blue,
-                child: Icon(Icons.person, size: 50, color: Colors.white),
+              GestureDetector(
+                onTap: _pickImage,
+                child: Stack(
+                  children: [
+                    CircleAvatar(
+                      radius: 50,
+                      backgroundColor: Colors.blue.withValues(alpha: 0.1),
+                      backgroundImage: _selectedImage != null
+                          ? FileImage(_selectedImage!)
+                          : (_profileImageUrl != null && _profileImageUrl!.isNotEmpty)
+                              ? NetworkImage(_profileImageUrl!) as ImageProvider
+                              : null,
+                      child: _selectedImage == null && 
+                             (_profileImageUrl == null || _profileImageUrl!.isEmpty)
+                          ? const Icon(Icons.person, size: 50, color: Colors.blue)
+                          : null,
+                    ),
+                    Positioned(
+                      bottom: 0,
+                      right: 0,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: Colors.blue,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.camera_alt,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 30),
               TextFormField(

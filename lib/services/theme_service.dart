@@ -43,6 +43,12 @@ class ThemeProvider with ChangeNotifier {
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
     ),
+    pageTransitionsTheme: const PageTransitionsTheme(
+      builders: {
+        TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+        TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+      },
+    ),
   );
 
   static final ThemeData darkTheme = ThemeData(
@@ -64,6 +70,12 @@ class ThemeProvider with ChangeNotifier {
       backgroundColor: Color(0xFF1E1E1E),
       selectedItemColor: Colors.redAccent,
       unselectedItemColor: Colors.grey,
+    ),
+    pageTransitionsTheme: const PageTransitionsTheme(
+      builders: {
+        TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+        TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+      },
     ),
   );
 }

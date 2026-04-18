@@ -76,8 +76,8 @@ class AuthService {
       'vehicleBrand': vehicleBrand,
       'vehicleModel': vehicleModel ?? '',
       'licensePlate': licensePlate ?? '',
-      'createdAt': FieldValue.serverTimestamp(),
-    });
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
   }
 
   /// Get user profile from Firestore

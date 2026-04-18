@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
+import 'package:url_launcher/url_launcher.dart';
 
 class TrackingScreen extends StatefulWidget {
   final String requestId;
@@ -27,6 +28,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
   StreamSubscription? _requestSubscription;
   LatLng? _mechanicLocation;
   String? _mechanicName;
+  String? _mechanicPhone;
   String? _status;
 
   @override
@@ -58,6 +60,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
       setState(() {
         _status = data['status'] ?? 'waiting';
         _mechanicName = data['mechanicName'];
+        _mechanicPhone = data['mechanicPhone'];
         if (mLat != null && mLng != null) {
           _mechanicLocation = LatLng(mLat, mLng);
           _updateMechanicMarker();
@@ -204,9 +207,20 @@ class _TrackingScreenState extends State<TrackingScreen> {
                           ],
                         ),
                       ),
-                      if (_mechanicName != null)
+                      if (_mechanicPhone != null && _mechanicPhone!.isNotEmpty)
                         IconButton(
-                          onPressed: () {}, // Future: Call mechanic
+                          onPressed: () async {
+                            final Uri callUri = Uri(scheme: 'tel', path: _mechanicPhone);
+                            if (await canLaunchUrl(callUri)) {
+                              await launchUrl(callUri);
+                            } else {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Could not launch dialer')),
+                                );
+                              }
+                            }
+                          },
                           icon: const Icon(Icons.phone, color: Colors.green),
                           style: IconButton.styleFrom(
                             backgroundColor: Colors.green.withValues(alpha: 0.1),

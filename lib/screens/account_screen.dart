@@ -5,6 +5,8 @@ import '../services/auth_service.dart';
 import '../services/theme_service.dart';
 import '../services/firebase_service.dart';
 import 'edit_profile_screen.dart';
+import 'package:shimmer/shimmer.dart';
+import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 
 class AccountScreen extends StatefulWidget {
   const AccountScreen({super.key});
@@ -39,7 +41,7 @@ class _AccountScreenState extends State<AccountScreen> {
               stream: _authService.userProfileStream,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
+                  return _buildProfileShimmer();
                 }
 
                 final profile = snapshot.data?.data() ?? {};
@@ -109,19 +111,15 @@ class _AccountScreenState extends State<AccountScreen> {
       ),
       child: Row(
         children: [
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF6A11CB), Color(0xFF2575FC)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white, width: 3),
-            ),
-            child: const Icon(Icons.person, size: 45, color: Colors.white),
+          CircleAvatar(
+            radius: 40,
+            backgroundColor: Colors.blue.withValues(alpha: 0.1),
+            backgroundImage: profile['profileImageUrl'] != null && profile['profileImageUrl'].isNotEmpty
+                ? NetworkImage(profile['profileImageUrl'])
+                : null,
+            child: (profile['profileImageUrl'] == null || profile['profileImageUrl'].isEmpty)
+                ? const Icon(Icons.person, size: 45, color: Colors.blue)
+                : null,
           ),
           const SizedBox(width: 20),
           Expanded(
@@ -149,7 +147,7 @@ class _AccountScreenState extends State<AccountScreen> {
               ],
             ),
           ),
-          IconButton(
+          BouncingWidget(
             onPressed: () {
               Navigator.push(
                 context,
@@ -158,9 +156,13 @@ class _AccountScreenState extends State<AccountScreen> {
                 ),
               );
             },
-            icon: const Icon(Icons.edit_outlined, color: Colors.blue),
-            style: IconButton.styleFrom(
-              backgroundColor: Colors.blue.withValues(alpha: 0.1),
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.edit_outlined, color: Colors.blue),
             ),
           ),
         ],
@@ -180,7 +182,12 @@ class _AccountScreenState extends State<AccountScreen> {
         int completed = 0;
 
         if (snapshot.hasError) {
-          return Center(child: Text("Error: ${snapshot.error}", style: const TextStyle(color: Colors.red)));
+          return Center(
+            child: Text(
+              "Error: ${snapshot.error}",
+              style: const TextStyle(color: Colors.red),
+            ),
+          );
         }
         if (snapshot.hasData) {
           total = snapshot.data!.docs.length;
@@ -288,7 +295,23 @@ class _AccountScreenState extends State<AccountScreen> {
           stream: _getRequestStream(userId),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return const SizedBox();
+              return Shimmer.fromColors(
+                baseColor: Theme.of(context).cardColor,
+                highlightColor: Colors.grey[100]!,
+                child: Column(
+                  children: List.generate(
+                    2,
+                    (index) => Container(
+                      height: 120,
+                      margin: const EdgeInsets.only(bottom: 10),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                    ),
+                  ),
+                ),
+              );
             }
             if (snapshot.hasError) {
               return Center(child: Text("Error: ${snapshot.error}"));
@@ -321,11 +344,12 @@ class _AccountScreenState extends State<AccountScreen> {
                 return bTime.compareTo(aTime);
               });
 
-            return ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: docs.length,
-              separatorBuilder: (context, index) => const SizedBox(height: 10),
+            return AnimationLimiter(
+              child: ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: docs.length,
+                separatorBuilder: (context, index) => const SizedBox(height: 10),
               itemBuilder: (context, index) {
                 final data = docs[index].data() as Map<String, dynamic>;
                 final status =
@@ -345,7 +369,13 @@ class _AccountScreenState extends State<AccountScreen> {
 
                 final hasReview = data.containsKey('rating');
 
-                return Container(
+                return AnimationConfiguration.staggeredList(
+                  position: index,
+                  duration: const Duration(milliseconds: 500),
+                  child: SlideAnimation(
+                    verticalOffset: 50.0,
+                    child: FadeInAnimation(
+                      child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: Theme.of(context).cardColor,
@@ -410,11 +440,17 @@ class _AccountScreenState extends State<AccountScreen> {
                             if (hasReview)
                               Row(
                                 children: [
-                                  const Icon(Icons.star, color: Colors.amber, size: 18),
+                                  const Icon(
+                                    Icons.star,
+                                    color: Colors.amber,
+                                    size: 18,
+                                  ),
                                   const SizedBox(width: 4),
                                   Text(
                                     "${data['rating']}",
-                                    style: const TextStyle(fontWeight: FontWeight.bold),
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
                                   const SizedBox(width: 8),
                                   Text(
@@ -432,24 +468,32 @@ class _AccountScreenState extends State<AccountScreen> {
                             else
                               const Text(
                                 "Service complete! How was it?",
-                                style: TextStyle(fontSize: 12, color: Colors.grey),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey,
+                                ),
                               ),
                             if (!hasReview)
                               TextButton(
-                                onPressed: () => _showRatingDialog(
-                                  context,
-                                  docs[index].id,
-                                ),
+                                onPressed: () =>
+                                    _showRatingDialog(context, docs[index].id),
                                 style: TextButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                                  backgroundColor: Colors.blue.withValues(alpha: 0.1),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                  ),
+                                  backgroundColor: Colors.blue.withValues(
+                                    alpha: 0.1,
+                                  ),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(20),
                                   ),
                                 ),
                                 child: const Text(
                                   "Rate Now",
-                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
                           ],
@@ -457,9 +501,9 @@ class _AccountScreenState extends State<AccountScreen> {
                       ],
                     ],
                   ),
-                );
+                ))));
               },
-            );
+            ));
           },
         ),
       ],
@@ -588,15 +632,17 @@ class _AccountScreenState extends State<AccountScreen> {
 
   Widget _filterChip(String label, String value) {
     bool isSelected = _historyFilter == value;
-    return GestureDetector(
-      onTap: () => setState(() => _historyFilter = value),
+    return BouncingWidget(
+      onPressed: () => setState(() => _historyFilter = value),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
           color: isSelected ? Colors.blue : Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? Colors.blue : Colors.grey.withValues(alpha: 0.2),
+            color: isSelected
+                ? Colors.blue
+                : Colors.grey.withValues(alpha: 0.2),
           ),
         ),
         child: Text(
@@ -645,7 +691,8 @@ class _AccountScreenState extends State<AccountScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: List.generate(5, (index) {
                   return IconButton(
-                    onPressed: () => setDialogState(() => selectedRating = index + 1.0),
+                    onPressed: () =>
+                        setDialogState(() => selectedRating = index + 1.0),
                     icon: Icon(
                       index < selectedRating ? Icons.star : Icons.star_border,
                       color: Colors.amber,
@@ -703,6 +750,115 @@ class _AccountScreenState extends State<AccountScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildProfileShimmer() {
+    return Shimmer.fromColors(
+      baseColor: Theme.of(context).cardColor,
+      highlightColor: Theme.of(context).cardColor.withValues(alpha: 0.5),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              height: 120,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+              ),
+            ),
+            const SizedBox(height: 30),
+            Container(
+              height: 24,
+              width: 150,
+              color: Colors.white,
+            ),
+            const SizedBox(height: 15),
+            Row(
+              children: List.generate(
+                3,
+                (_) => Expanded(
+                  child: Container(
+                    height: 100,
+                    margin: const EdgeInsets.only(right: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 30),
+            Container(
+              height: 24,
+              width: 150,
+              color: Colors.white,
+            ),
+            const SizedBox(height: 15),
+            Container(
+              height: 120,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(15),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class BouncingWidget extends StatefulWidget {
+  final Widget child;
+  final VoidCallback onPressed;
+  const BouncingWidget({
+    super.key,
+    required this.child,
+    required this.onPressed,
+  });
+
+  @override
+  State<BouncingWidget> createState() => _BouncingWidgetState();
+}
+
+class _BouncingWidgetState extends State<BouncingWidget>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 100));
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.90).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => _controller.forward(),
+      onTapUp: (_) {
+        _controller.reverse();
+        widget.onPressed();
+      },
+      onTapCancel: () => _controller.reverse(),
+      child: ScaleTransition(
+        scale: _scaleAnimation,
+        child: widget.child,
       ),
     );
   }

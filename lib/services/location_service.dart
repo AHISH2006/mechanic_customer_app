@@ -10,10 +10,19 @@ class LocationService {
       permission = await Geolocator.requestPermission();
     }
 
-    return await Geolocator.getCurrentPosition(
-      desiredAccuracy: LocationAccuracy.high,
-      timeLimit: const Duration(seconds: 10), // Prevent infinite waiting
-    );
+    try {
+      return await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+        timeLimit: const Duration(seconds: 15), // Increased timeout slightly
+      );
+    } catch (e) {
+      // If there's a timeout or error, attempt to fallback to the last known position
+      Position? lastKnown = await Geolocator.getLastKnownPosition();
+      if (lastKnown != null) {
+        return lastKnown;
+      }
+      rethrow; // If no last known position, rethrow the error so it can be handled by the UI
+    }
   }
 
   Future<String> getAddressFromLatLng(double lat, double lng) async {

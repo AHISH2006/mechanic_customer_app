@@ -9,6 +9,9 @@ import '../services/notification_service.dart';
 import 'map_picker_screen.dart';
 import 'notifications_screen.dart';
 import 'tracking_screen.dart';
+import '../widgets/custom_animations.dart';
+import '../widgets/request_button.dart';
+import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -20,7 +23,6 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   String _locationStatus = "Detecting location...";
   String _locationAddress = "";
-  bool _isRequesting = false;
 
   final _locationService = LocationService();
   final _authService = AuthService();
@@ -95,12 +97,10 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  void _requestHelp() async {
-    setState(() => _isRequesting = true);
+  Future<void> _requestHelp() async {
     try {
       final position = await _locationService.getLocation();
       if (!mounted) return;
-      setState(() => _isRequesting = false);
 
       final LatLng? confirmedLocation = await Navigator.push<LatLng>(
         context,
@@ -113,8 +113,6 @@ class _HomeScreenState extends State<HomeScreen> {
       );
 
       if (confirmedLocation != null && mounted) {
-        setState(() => _isRequesting = true);
-
         // Fetch fresh address for the confirmed location
         final confirmedAddress = await _locationService.getAddressFromLatLng(
           confirmedLocation.latitude,
@@ -133,7 +131,6 @@ class _HomeScreenState extends State<HomeScreen> {
         );
 
         if (mounted) {
-          setState(() => _isRequesting = false);
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text(
@@ -143,14 +140,18 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           );
         }
+      } else {
+        throw Exception('Cancelled by user');
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _isRequesting = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed: $e'), backgroundColor: Colors.red),
-        );
+        if (!e.toString().contains('Cancelled by user')) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed: $e'), backgroundColor: Colors.red),
+          );
+        }
       }
+      rethrow;
     }
   }
 
@@ -370,8 +371,6 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final screenSize = MediaQuery.sizeOf(context);
-    final screenWidth = screenSize.width;
 
     return Scaffold(
       appBar: AppBar(
@@ -480,16 +479,24 @@ class _HomeScreenState extends State<HomeScreen> {
                       ],
                     ),
                   ),
-                  IconButton(
+                  TextButton.icon(
                     onPressed: _locationStatus == "Detecting location..." ? null : _determinePosition,
                     icon: Icon(
-                      Icons.refresh,
+                      Icons.my_location,
                       color: _locationStatus == "Detecting location..." 
                           ? Colors.grey 
                           : theme.primaryColor,
-                      size: 20,
+                      size: 18,
                     ),
-                    tooltip: "Refresh Location",
+                    label: Text(
+                      "Auto Detect",
+                      style: TextStyle(
+                        color: _locationStatus == "Detecting location..." 
+                            ? Colors.grey 
+                            : theme.primaryColor,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -509,51 +516,17 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: 40),
 
             // Emergency Button
-            Center(
-              child: GestureDetector(
-                onTap: _isRequesting ? null : _requestHelp,
-                child: Container(
-                  width: screenWidth * 0.5,
-                  height: screenWidth * 0.5,
-                  decoration: BoxDecoration(
-                    color: Colors.red,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.red.withValues(alpha: 0.3),
-                        blurRadius: 30,
-                        spreadRadius: 10,
-                      ),
-                    ],
-                  ),
-                  child: Center(
-                    child: _isRequesting
-                        ? const CircularProgressIndicator(color: Colors.white)
-                        : const Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.warning_amber_rounded,
-                                size: 48,
-                                color: Colors.white,
-                              ),
-                              SizedBox(height: 8),
-                              Text(
-                                "REQUEST\nHELP",
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 18,
-                                ),
-                              ),
-                            ],
-                          ),
-                  ),
-                ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: RequestHelpButton(
+                onRequest: () async {
+                  // We simulate fetching mechanics logic here without managing 
+                  // loading states manually as the button handles it now.
+                  await _requestHelp();
+                },
               ),
             ),
-
+            
             const SizedBox(height: 40),
             const Divider(),
             const SizedBox(height: 20),
@@ -583,20 +556,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   );
                 }
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 30),
-                    decoration: BoxDecoration(
-                      color: theme.cardColor.withValues(alpha: 0.5),
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                    child: const Column(
-                      children: [
-                        Icon(Icons.assignment_late_outlined, color: Colors.grey, size: 40),
-                        SizedBox(height: 10),
-                        Text("No recent requests", style: TextStyle(color: Colors.grey)),
-                      ],
-                    ),
+                  return const EmptyStateWidget(
+                    icon: Icons.assignment_late_outlined,
+                    message: "No recent requests",
                   );
                 }
                 // Sort client-side: newest first, take top 3
@@ -610,20 +572,46 @@ class _HomeScreenState extends State<HomeScreen> {
                     return bT.compareTo(aT);
                   });
                 final recentDocs = docs.take(3).toList();
-                return Column(
-                  children: recentDocs.map((doc) {
-                    final data = doc.data() as Map<String, dynamic>;
-                    final status = data['status'] ?? 'waiting';
-                    final time = data['time'] as Timestamp?;
+                return AnimationLimiter(
+                  child: Column(
+                    children: recentDocs.asMap().entries.map((entry) {
+                      int index = entry.key;
+                      var doc = entry.value;
+                      final data = doc.data() as Map<String, dynamic>;
+                      final status = data['status'] ?? 'waiting';
+                      final time = data['time'] as Timestamp?;
 
-                    Color statusColor = Colors.orange;
-                    if (status == 'accepted') statusColor = Colors.blue;
-                    if (status == 'completed' || status == 'finished') statusColor = Colors.green;
+                      Color statusColor = Colors.orange;
+                      if (status == 'accepted') statusColor = Colors.blue;
+                      if (status == 'completed' || status == 'finished') statusColor = Colors.green;
 
-                    return GestureDetector(
-                      onTap: () => _showRequestDetails(data, doc.id),
-                      child: Card(
-                        margin: const EdgeInsets.only(bottom: 12),
+                      return AnimationConfiguration.staggeredList(
+                        position: index,
+                        duration: const Duration(milliseconds: 250),
+                        child: SlideAnimation(
+                          verticalOffset: 30.0,
+                          child: FadeInAnimation(
+                            child: Dismissible(
+                              key: Key(doc.id),
+                              direction: DismissDirection.endToStart,
+                              background: Container(
+                                alignment: Alignment.centerRight,
+                                padding: const EdgeInsets.only(right: 20),
+                                margin: const EdgeInsets.only(bottom: 12),
+                                decoration: BoxDecoration(
+                                  color: Colors.red,
+                                  borderRadius: BorderRadius.circular(15),
+                                ),
+                                child: const Icon(Icons.delete, color: Colors.white),
+                              ),
+                              onDismissed: (direction) {
+                                _cancelRequest(doc.id);
+                              },
+                              child: BouncingWidget(
+                                scaleFactor: 0.98,
+                                onTap: () => _showRequestDetails(data, doc.id),
+                                child: Card(
+                                  margin: const EdgeInsets.only(bottom: 12),
                         elevation: 0,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(15),
@@ -636,20 +624,26 @@ class _HomeScreenState extends State<HomeScreen> {
                               Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Container(
+                                  AnimatedContainer(
+                                    duration: const Duration(milliseconds: 300),
                                     padding: const EdgeInsets.all(10),
                                     decoration: BoxDecoration(
                                       color: statusColor.withValues(alpha: 0.1),
                                       shape: BoxShape.circle,
                                     ),
-                                    child: Icon(
-                                      status == 'waiting'
-                                          ? Icons.access_time
-                                          : status == 'accepted'
-                                              ? Icons.directions_car
-                                              : Icons.check_circle,
-                                      color: statusColor,
-                                      size: 20,
+                                    child: AnimatedSwitcher(
+                                      duration: const Duration(milliseconds: 250),
+                                      transitionBuilder: (child, animation) => ScaleTransition(scale: animation, child: child),
+                                      child: Icon(
+                                        status == 'waiting'
+                                            ? Icons.access_time
+                                            : status == 'accepted'
+                                                ? Icons.directions_car
+                                                : Icons.check_circle,
+                                        key: ValueKey(status),
+                                        color: statusColor,
+                                        size: 20,
+                                      ),
                                     ),
                                   ),
                                   const SizedBox(width: 12),
@@ -695,7 +689,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ),
                                   Row(
                                     children: [
-                                      Container(
+                                      AnimatedContainer(
+                                        duration: const Duration(milliseconds: 300),
                                         padding: const EdgeInsets.symmetric(
                                             horizontal: 10, vertical: 4),
                                         decoration: BoxDecoration(
@@ -703,12 +698,16 @@ class _HomeScreenState extends State<HomeScreen> {
                                           borderRadius:
                                               BorderRadius.circular(20),
                                         ),
-                                        child: Text(
-                                          status.toString().toUpperCase(),
-                                          style: const TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 10,
-                                              fontWeight: FontWeight.bold),
+                                        child: AnimatedSwitcher(
+                                          duration: const Duration(milliseconds: 200),
+                                          child: Text(
+                                            status.toString().toUpperCase(),
+                                            key: ValueKey(status),
+                                            style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.bold),
+                                          ),
                                         ),
                                       ),
                                       if (status == 'waiting') ...[
@@ -723,11 +722,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                       ],
                                       if (status == 'accepted' || status == 'in_progress') ...[
                                         const SizedBox(width: 8),
-                                        GestureDetector(
+                                        BouncingWidget(
                                           onTap: () => Navigator.push(
                                             context,
-                                            MaterialPageRoute(
-                                              builder: (context) => TrackingScreen(
+                                            SlideUpPageRoute(
+                                              page: TrackingScreen(
                                                 requestId: doc.id,
                                                 userLat: data['lat'] ?? 0.0,
                                                 userLng: data['lng'] ?? 0.0,
@@ -748,10 +747,15 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                       ),
-                    );
-                  }).toList(),
-                );
-              },
+                    ),
+                  ),
+                ),
+              ),
+            );
+            }).toList(),
+          ),
+        );
+      },
             ),
           ],
         ),
@@ -869,23 +873,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                 ],
               ),
-              if (status == 'waiting') ...[
-                const SizedBox(height: 15),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextButton(
-                        onPressed: () => _firebaseService.simulateAcceptance(requestId),
-                        style: TextButton.styleFrom(
-                          backgroundColor: Colors.white.withValues(alpha: 0.2),
-                          foregroundColor: Colors.white,
-                        ),
-                        child: const Text("SIMULATE ACCEPTANCE (DEBUG)"),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+
             ],
           ),
         );

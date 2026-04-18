@@ -31,23 +31,53 @@ class MechanicCustomerApp extends StatelessWidget {
       home: StreamBuilder<User?>(
         stream: FirebaseAuth.instance.authStateChanges(),
         builder: (context, snapshot) {
-          // Show loading while checking auth state
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Scaffold(
-              body: Center(
-                child: CircularProgressIndicator(color: Color(0xFFE53935)),
-              ),
-            );
-          }
-
-          // Route based on auth state
-          if (snapshot.hasData && snapshot.data != null) {
-            return const MainScreen();
-          }
-          return const LoginScreen();
+          return AnimatedSwitcher(
+            duration: const Duration(milliseconds: 400),
+            switchInCurve: Curves.easeInCubic,
+            switchOutCurve: Curves.easeOutCubic,
+            child: _buildAuthState(snapshot),
+          );
         },
       ),
       debugShowCheckedModeBanner: false,
     );
+  }
+
+  Widget _buildAuthState(AsyncSnapshot<User?> snapshot) {
+    if (snapshot.connectionState == ConnectionState.waiting) {
+      return Scaffold(
+        key: const ValueKey('splash'),
+        backgroundColor: Colors.redAccent,
+        body: Center(
+          child: TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0.0, end: 1.0),
+            duration: const Duration(milliseconds: 600),
+            builder: (context, value, child) {
+              return Opacity(
+                opacity: value,
+                child: const Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.directions_car, size: 80, color: Colors.white),
+                    SizedBox(height: 16),
+                    Text(
+                      "Mechanic Fast",
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      );
+    }
+    if (snapshot.hasData && snapshot.data != null) {
+      return const MainScreen(key: ValueKey('main'));
+    }
+    return const LoginScreen(key: ValueKey('login'));
   }
 }

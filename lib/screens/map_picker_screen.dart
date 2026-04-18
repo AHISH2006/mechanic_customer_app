@@ -52,6 +52,7 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
     try {
       Position position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
+        timeLimit: const Duration(seconds: 15),
       );
       final myLocation = LatLng(position.latitude, position.longitude);
       _mapController?.animateCamera(
@@ -59,9 +60,22 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
       );
       _selectedLocation = myLocation;
     } catch (e) {
+      // Fallback to last known position on timeout or error
+      try {
+        Position? position = await Geolocator.getLastKnownPosition();
+        if (position != null) {
+          final myLocation = LatLng(position.latitude, position.longitude);
+          _mapController?.animateCamera(
+            CameraUpdate.newLatLngZoom(myLocation, 16.0),
+          );
+          _selectedLocation = myLocation;
+          return;
+        }
+      } catch (_) {}
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not fetch current location.')),
+          const SnackBar(content: Text('Could not auto-detect location.')),
         );
       }
     }
@@ -227,6 +241,32 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
                     ),
                   ),
                   SizedBox(height: screenHeight * 0.02),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: _goToCurrentLocation,
+                      icon: const Icon(Icons.my_location),
+                      label: Text(
+                        "AUTO DETECT",
+                        style: TextStyle(
+                          fontSize: buttonTextSize * 0.9,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.1,
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.blue,
+                        side: const BorderSide(color: Colors.blue, width: 1.5),
+                        padding: EdgeInsets.symmetric(
+                          vertical: buttonVerticalPad * 0.8,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: screenHeight * 0.015),
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(

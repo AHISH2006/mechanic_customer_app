@@ -58,17 +58,5 @@ class FirebaseService {
         .snapshots();
   }
 
-  /// SIMULATION: Simulate a mechanic accepting the request
-  /// In a real app, this would be done by the Mechanic App.
-  Future<void> simulateAcceptance(String requestId) async {
-    await _firestore.collection('requests').doc(requestId).update({
-      'status': 'accepted',
-      'mechanicId': 'test_mechanic_123',
-      'mechanicName': 'Ramesh Mechanic',
-      'mechanicPhone': '+91 98765 43210',
-      'mechanicLat': 13.0827, // Sample Chennai coordinates
-      'mechanicLng': 80.2707,
-      'acceptedAt': FieldValue.serverTimestamp(),
-    });
-  }
+
 }
