@@ -3,8 +3,10 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import 'services/theme_service.dart';
+import 'services/connectivity_service.dart';
 import 'screens/login_screen.dart';
 import 'screens/main_screen.dart';
+import 'screens/no_internet_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,14 +30,26 @@ class MechanicCustomerApp extends StatelessWidget {
     return MaterialApp(
       title: 'Mechanic Help',
       theme: themeProvider.currentTheme,
-      home: StreamBuilder<User?>(
-        stream: FirebaseAuth.instance.authStateChanges(),
-        builder: (context, snapshot) {
-          return AnimatedSwitcher(
-            duration: const Duration(milliseconds: 400),
-            switchInCurve: Curves.easeInCubic,
-            switchOutCurve: Curves.easeOutCubic,
-            child: _buildAuthState(snapshot),
+      home: StreamBuilder<bool>(
+        stream: ConnectivityService().isConnectedStream,
+        initialData: true, 
+        builder: (context, connectivitySnapshot) {
+          final isConnected = connectivitySnapshot.data ?? true;
+          
+          if (!isConnected) {
+            return const NoInternetScreen();
+          }
+
+          return StreamBuilder<User?>(
+            stream: FirebaseAuth.instance.authStateChanges(),
+            builder: (context, snapshot) {
+              return AnimatedSwitcher(
+                duration: const Duration(milliseconds: 400),
+                switchInCurve: Curves.easeInCubic,
+                switchOutCurve: Curves.easeOutCubic,
+                child: _buildAuthState(snapshot),
+              );
+            },
           );
         },
       ),
@@ -81,3 +95,4 @@ class MechanicCustomerApp extends StatelessWidget {
     return const LoginScreen(key: ValueKey('login'));
   }
 }
+

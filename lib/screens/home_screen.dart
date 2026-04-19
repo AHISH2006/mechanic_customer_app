@@ -5,9 +5,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/location_service.dart';
 import '../services/auth_service.dart';
 import '../services/firebase_service.dart';
-import '../services/notification_service.dart';
 import 'map_picker_screen.dart';
-import 'notifications_screen.dart';
+
 import 'tracking_screen.dart';
 import '../widgets/custom_animations.dart';
 import '../widgets/request_button.dart';
@@ -27,7 +26,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final _locationService = LocationService();
   final _authService = AuthService();
   final _firebaseService = FirebaseService();
-  final _notificationService = NotificationService();
+
 
   @override
   void initState() {
@@ -119,27 +118,23 @@ class _HomeScreenState extends State<HomeScreen> {
           confirmedLocation.longitude,
         );
 
-        final requestId = await _firebaseService.sendRequest(
+        await _firebaseService.sendRequest(
           confirmedLocation.latitude,
           confirmedLocation.longitude,
           confirmedAddress,
         );
-        await _notificationService.sendRequestConfirmation(
-          requestId: requestId,
-          lat: confirmedLocation.latitude,
-          lng: confirmedLocation.longitude,
-        );
+
+
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text(
-                'Help request submitted! A confirmation email has been sent.',
-              ),
+              content: Text('Help request submitted successfully!'),
               backgroundColor: Colors.green,
             ),
           );
         }
+
       } else {
         throw Exception('Cancelled by user');
       }
@@ -380,31 +375,9 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         centerTitle: true,
         actions: [
-          StreamBuilder<QuerySnapshot>(
-            stream: _notificationService.getUserNotifications(),
-            builder: (context, snapshot) {
-              int unreadCount = snapshot.hasData
-                  ? snapshot.data!.docs
-                        .where((doc) => (doc.data() as Map)['read'] == false)
-                        .length
-                  : 0;
-              return IconButton(
-                icon: Badge(
-                  label: unreadCount > 0 ? Text('$unreadCount') : null,
-                  isLabelVisible: unreadCount > 0,
-                  child: const Icon(Icons.notifications_outlined),
-                ),
-                onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const NotificationsScreen(),
-                  ),
-                ),
-              );
-            },
-          ),
           const SizedBox(width: 8),
         ],
+
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),

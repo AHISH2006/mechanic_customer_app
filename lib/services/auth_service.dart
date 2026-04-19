@@ -11,50 +11,48 @@ class AuthService {
   /// Stream of auth state changes for reactive UI
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 
+  /// Sign out
+  Future<void> signOut() async {
+    await _auth.signOut();
+  }
+
+  /// Sign up with email and password
+  Future<UserCredential> signUp({
+    required String email,
+    required String password,
+    required String name,
+    required String phone,
+  }) async {
+    final credential = await _auth.createUserWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
+
+    if (credential.user != null) {
+      await saveUserProfile(
+        uid: credential.user!.uid,
+        name: name,
+        phone: phone,
+        email: email,
+      );
+    }
+    return credential;
+  }
+
   /// Sign in with email and password
   Future<UserCredential> signIn({
     required String email,
     required String password,
   }) async {
     return await _auth.signInWithEmailAndPassword(
-      email: email.trim(),
+      email: email,
       password: password,
     );
   }
 
-  /// Create a new account and save profile to Firestore
-  Future<UserCredential> signUp({
-    required String email,
-    required String password,
-    required String name,
-    required String phone,
-    required String vehicleType,
-    required String vehicleBrand,
-    String? vehicleModel,
-    String? licensePlate,
-  }) async {
-    // 1. Create Firebase Auth account
-    final credential = await _auth.createUserWithEmailAndPassword(
-      email: email.trim(),
-      password: password,
-    );
-
-    // 2. Update display name
-    await credential.user?.updateDisplayName(name.trim());
-
-    // 3. Save full profile to Firestore
-    await saveUserProfile(
-      uid: credential.user!.uid,
-      name: name.trim(),
-      phone: phone.trim(),
-      email: email.trim(),
-      vehicleType: vehicleType,
-      vehicleBrand: vehicleBrand.trim(),
-      vehicleModel: vehicleModel?.trim(),
-      licensePlate: licensePlate?.trim(),
-    );
-
-    return credential;
+  /// Send password reset email
+  Future<void> sendPasswordReset(String email) async {
+    await _auth.sendPasswordResetEmail(email: email);
   }
 
   /// Save user profile data to Firestore
@@ -63,8 +61,8 @@ class AuthService {
     required String name,
     required String phone,
     required String email,
-    required String vehicleType,
-    required String vehicleBrand,
+    String? vehicleType,
+    String? vehicleBrand,
     String? vehicleModel,
     String? licensePlate,
   }) async {
@@ -72,8 +70,8 @@ class AuthService {
       'name': name,
       'phone': phone,
       'email': email,
-      'vehicleType': vehicleType,
-      'vehicleBrand': vehicleBrand,
+      'vehicleType': vehicleType ?? '',
+      'vehicleBrand': vehicleBrand ?? '',
       'vehicleModel': vehicleModel ?? '',
       'licensePlate': licensePlate ?? '',
       'updatedAt': FieldValue.serverTimestamp(),
@@ -99,8 +97,15 @@ class AuthService {
     return _firestore.collection('users').doc(uid).snapshots();
   }
 
-  /// Sign out
-  Future<void> signOut() async {
-    await _auth.signOut();
+  /// Check if a user document exists in Firestore
+  Future<bool> checkUserDocumentExists(String uid) async {
+    try {
+      final doc = await _firestore.collection('users').doc(uid).get();
+      return doc.exists;
+    } catch (e) {
+      return false;
+    }
   }
 }
+
+

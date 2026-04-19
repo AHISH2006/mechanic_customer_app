@@ -536,27 +536,13 @@ class _AccountScreenState extends State<AccountScreen> {
                 onChanged: (val) => themeProvider.toggleTheme(),
                 activeThumbColor: Colors.blue,
               ),
-              const Divider(height: 1),
-              ListTile(
-                leading: const Icon(
-                  Icons.notifications_active_outlined,
-                  color: Colors.blue,
-                ),
-                title: const Text(
-                  "Notifications",
-                  style: TextStyle(fontSize: 15),
-                ),
-                trailing: Switch.adaptive(
-                  value: true,
-                  onChanged: (v) {},
-                  activeThumbColor: Colors.blue,
-                ),
-              ),
             ],
+
           ),
         ),
       ],
     );
+
   }
 
   Widget _buildAccountActions(BuildContext context) {

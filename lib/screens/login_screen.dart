@@ -61,48 +61,41 @@ class _LoginScreenState extends State<LoginScreen>
 
     try {
       await _authService.signIn(
-        email: _emailController.text,
+        email: _emailController.text.trim(),
         password: _passwordController.text,
       );
-      // Auth state listener in main.dart will handle navigation
+      // Auth state listener in main.dart handles navigation
     } on FirebaseAuthException catch (e) {
-      String message;
-      switch (e.code) {
-        case 'user-not-found':
-          message = 'No account found with this email.';
-          break;
-        case 'wrong-password':
-          message = 'Incorrect password. Please try again.';
-          break;
-        case 'invalid-email':
-          message = 'Please enter a valid email address.';
-          break;
-        case 'user-disabled':
-          message = 'This account has been disabled.';
-          break;
-        case 'invalid-credential':
-          message = 'Invalid email or password.';
-          break;
-        default:
-          message = e.message ?? 'Login failed. Please try again.';
-      }
       if (mounted) {
         setState(() {
-          _errorMessage = message;
+          _errorMessage = e.message ?? 'Login failed. Please try again.';
+          _isLoading = false;
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
           _errorMessage = 'Something went wrong. Please try again.';
-        });
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
           _isLoading = false;
         });
       }
+    }
+  }
+
+  Future<void> _forgotPassword() async {
+    if (_emailController.text.isEmpty) {
+      setState(() => _errorMessage = "Please enter your email first");
+      return;
+    }
+    try {
+      await _authService.sendPasswordReset(_emailController.text.trim());
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Password reset link sent to your email")),
+        );
+      }
+    } catch (e) {
+      setState(() => _errorMessage = "Failed to send reset link");
     }
   }
 
@@ -111,7 +104,6 @@ class _LoginScreenState extends State<LoginScreen>
     final screenSize = MediaQuery.sizeOf(context);
     final screenWidth = screenSize.width;
     final screenHeight = screenSize.height;
-    final isSmallPhone = screenWidth < 360;
     final isTablet = screenWidth >= 600;
 
     return Scaffold(
@@ -122,11 +114,7 @@ class _LoginScreenState extends State<LoginScreen>
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              Color(0xFFE53935), // Red 600
-              Color(0xFFC62828), // Red 800
-              Color(0xFF8E0000), // Dark Red
-            ],
+            colors: [Color(0xFFE53935), Color(0xFFC62828), Color(0xFF8E0000)],
           ),
         ),
         child: SafeArea(
@@ -139,266 +127,13 @@ class _LoginScreenState extends State<LoginScreen>
                 child: Column(
                   children: [
                     SizedBox(height: screenHeight * 0.08),
-
-                    // Logo / Icon Section
-                    Container(
-                      width: isTablet ? 110 : (isSmallPhone ? 70 : 90),
-                      height: isTablet ? 110 : (isSmallPhone ? 70 : 90),
-                      decoration: BoxDecoration(
-                        color: const Color.fromRGBO(255, 255, 255, 0.15),
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: const Color.fromRGBO(255, 255, 255, 0.3),
-                          width: 2,
-                        ),
-                      ),
-                      child: Icon(
-                        Icons.build_rounded,
-                        size: isTablet ? 50 : (isSmallPhone ? 32 : 42),
-                        color: Colors.white,
-                      ),
-                    ),
-
+                    _buildLogo(isTablet),
                     SizedBox(height: screenHeight * 0.025),
-
-                    // Title
-                    Text(
-                      "Mechanic Help",
-                      style: TextStyle(
-                        fontSize: isTablet ? 34 : (isSmallPhone ? 24 : 30),
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        letterSpacing: 1.2,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      "Roadside assistance when you need it",
-                      style: TextStyle(
-                        fontSize: isTablet ? 16 : (isSmallPhone ? 12 : 14),
-                        color: const Color.fromRGBO(255, 255, 255, 0.8),
-                      ),
-                    ),
-
+                    _buildTitle(isTablet),
                     SizedBox(height: screenHeight * 0.05),
-
-                    // Login Card
-                    Container(
-                      padding: EdgeInsets.all(
-                        isTablet ? 32 : (isSmallPhone ? 20 : 24),
-                      ),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).cardColor,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.15),
-                            blurRadius: 30,
-                            offset: const Offset(0, 10),
-                          ),
-                        ],
-                      ),
-                      child: Form(
-                        key: _formKey,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            const Text(
-                              "Welcome Back",
-                              style: TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              "Sign in to your account",
-                              style: TextStyle(
-                                fontSize: isTablet ? 15 : 13,
-                                color: Colors.grey[500],
-                              ),
-                            ),
-                            const SizedBox(height: 24),
-
-                            // Error banner
-                            if (_errorMessage != null) ...[
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: Colors.red.shade50,
-                                  borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(
-                                    color: Colors.red.shade200,
-                                  ),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      Icons.error_outline,
-                                      color: Colors.red.shade700,
-                                      size: 20,
-                                    ),
-                                    const SizedBox(width: 10),
-                                    Expanded(
-                                      child: Text(
-                                        _errorMessage!,
-                                        style: TextStyle(
-                                          color: Colors.red.shade700,
-                                          fontSize: 13,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                            ],
-
-                            // Email Field
-                            TextFormField(
-                              controller: _emailController,
-                              keyboardType: TextInputType.emailAddress,
-                              textInputAction: TextInputAction.next,
-                              decoration: _inputDecoration(
-                                label: "Email",
-                                hint: "you@example.com",
-                                icon: Icons.email_outlined,
-                              ),
-                              validator: (value) {
-                                if (value == null || value.trim().isEmpty) {
-                                  return 'Please enter your email';
-                                }
-                                if (!RegExp(
-                                  r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
-                                ).hasMatch(value.trim())) {
-                                  return 'Please enter a valid email';
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 16),
-
-                            // Password Field
-                            TextFormField(
-                              controller: _passwordController,
-                              obscureText: _obscurePassword,
-                              textInputAction: TextInputAction.done,
-                              onFieldSubmitted: (_) => _login(),
-                              decoration:
-                                  _inputDecoration(
-                                    label: "Password",
-                                    hint: "Enter your password",
-                                    icon: Icons.lock_outline,
-                                  ).copyWith(
-                                    suffixIcon: IconButton(
-                                      icon: Icon(
-                                        _obscurePassword
-                                            ? Icons.visibility_off_outlined
-                                            : Icons.visibility_outlined,
-                                        color: Colors.grey[500],
-                                        size: 20,
-                                      ),
-                                      onPressed: () {
-                                        setState(() {
-                                          _obscurePassword = !_obscurePassword;
-                                        });
-                                      },
-                                    ),
-                                  ),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Please enter your password';
-                                }
-                                if (value.length < 6) {
-                                  return 'Password must be at least 6 characters';
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 24),
-
-                            // Login Button
-                            SizedBox(
-                              height: isTablet ? 54 : 48,
-                              child: ElevatedButton(
-                                onPressed: _isLoading ? null : _login,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFFE53935),
-                                  foregroundColor: Colors.white,
-                                  disabledBackgroundColor: const Color(
-                                    0xFFE57373,
-                                  ),
-                                  elevation: 2,
-                                  shadowColor: const Color.fromRGBO(
-                                    229,
-                                    57,
-                                    53,
-                                    0.4,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(14),
-                                  ),
-                                ),
-                                child: _isLoading
-                                    ? const SizedBox(
-                                        width: 22,
-                                        height: 22,
-                                        child: CircularProgressIndicator(
-                                          color: Colors.white,
-                                          strokeWidth: 2.5,
-                                        ),
-                                      )
-                                    : Text(
-                                        "LOGIN",
-                                        style: TextStyle(
-                                          fontSize: isTablet ? 17 : 15,
-                                          fontWeight: FontWeight.bold,
-                                          letterSpacing: 1.5,
-                                        ),
-                                      ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-
+                    _buildLoginForm(isTablet),
                     SizedBox(height: screenHeight * 0.03),
-
-                    // Sign Up Link
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          "Don't have an account?  ",
-                          style: TextStyle(
-                            color: const Color.fromRGBO(255, 255, 255, 0.8),
-                            fontSize: isTablet ? 15 : 13,
-                          ),
-                        ),
-                        GestureDetector(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const RegistrationScreen(),
-                              ),
-                            );
-                          },
-                          child: Text(
-                            "Sign Up",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: isTablet ? 15 : 13,
-                              decoration: TextDecoration.underline,
-                              decorationColor: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-
+                    _buildSignUpLink(isTablet),
                     SizedBox(height: screenHeight * 0.05),
                   ],
                 ),
@@ -410,11 +145,150 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 
-  InputDecoration _inputDecoration({
-    required String label,
-    required String hint,
-    required IconData icon,
-  }) {
+  Widget _buildLogo(bool isTablet) {
+    return Container(
+      width: isTablet ? 110 : 90,
+      height: isTablet ? 110 : 90,
+      decoration: BoxDecoration(
+        color: const Color.fromRGBO(255, 255, 255, 0.15),
+        shape: BoxShape.circle,
+        border: Border.all(color: const Color.fromRGBO(255, 255, 255, 0.3), width: 2),
+      ),
+      child: Icon(Icons.build_rounded, size: isTablet ? 50 : 42, color: Colors.white),
+    );
+  }
+
+  Widget _buildTitle(bool isTablet) {
+    return Column(
+      children: [
+        Text(
+          "Mechanic Help",
+          style: TextStyle(fontSize: isTablet ? 34 : 30, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 1.2),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          "Roadside assistance when you need it",
+          style: TextStyle(fontSize: isTablet ? 16 : 14, color: const Color.fromRGBO(255, 255, 255, 0.8)),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLoginForm(bool isTablet) {
+    return Container(
+      padding: EdgeInsets.all(isTablet ? 32 : 24),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 30, offset: const Offset(0, 10)),
+        ],
+      ),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text("Welcome Back", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 4),
+            Text("Sign in to your account", style: TextStyle(fontSize: isTablet ? 15 : 13, color: Colors.grey[500])),
+            const SizedBox(height: 24),
+            if (_errorMessage != null) _buildErrorBanner(),
+            _buildEmailField(),
+            const SizedBox(height: 16),
+            _buildPasswordField(),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: _forgotPassword,
+                child: const Text("Forgot Password?", style: TextStyle(fontSize: 13)),
+              ),
+            ),
+            const SizedBox(height: 16),
+            _buildLoginButton(isTablet),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmailField() {
+    return TextFormField(
+      controller: _emailController,
+      keyboardType: TextInputType.emailAddress,
+      textInputAction: TextInputAction.next,
+      decoration: _inputDecoration(label: "Email", hint: "you@example.com", icon: Icons.email_outlined),
+      validator: (value) {
+        if (value == null || value.trim().isEmpty) return 'Please enter your email';
+        if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value.trim())) return 'Please enter a valid email';
+        return null;
+      },
+    );
+  }
+
+  Widget _buildPasswordField() {
+    return TextFormField(
+      controller: _passwordController,
+      obscureText: _obscurePassword,
+      textInputAction: TextInputAction.done,
+      onFieldSubmitted: (_) => _login(),
+      decoration: _inputDecoration(label: "Password", hint: "Enter your password", icon: Icons.lock_outline).copyWith(
+        suffixIcon: IconButton(
+          icon: Icon(_obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined, color: Colors.grey[500], size: 20),
+          onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+        ),
+      ),
+      validator: (value) => (value == null || value.isEmpty) ? 'Please enter your password' : null,
+    );
+  }
+
+  Widget _buildLoginButton(bool isTablet) {
+    return SizedBox(
+      height: isTablet ? 54 : 48,
+      child: ElevatedButton(
+        onPressed: _isLoading ? null : _login,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFFE53935),
+          foregroundColor: Colors.white,
+          disabledBackgroundColor: const Color(0xFFE57373),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        ),
+        child: _isLoading
+            ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
+            : const Text("LOGIN", style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.5)),
+      ),
+    );
+  }
+
+  Widget _buildSignUpLink(bool isTablet) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text("Don't have an account?  ", style: TextStyle(color: const Color.fromRGBO(255, 255, 255, 0.8), fontSize: isTablet ? 15 : 13)),
+        GestureDetector(
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RegistrationScreen())),
+          child: const Text("Sign Up", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, decoration: TextDecoration.underline)),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildErrorBanner() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(color: Colors.red.shade50, borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.red.shade200)),
+      child: Row(
+        children: [
+          Icon(Icons.error_outline, color: Colors.red.shade700, size: 20),
+          const SizedBox(width: 10),
+          Expanded(child: Text(_errorMessage!, style: TextStyle(color: Colors.red.shade700, fontSize: 13))),
+        ],
+      ),
+    );
+  }
+
+  InputDecoration _inputDecoration({required String label, required String hint, required IconData icon}) {
     return InputDecoration(
       labelText: label,
       hintText: hint,
@@ -422,26 +296,9 @@ class _LoginScreenState extends State<LoginScreen>
       filled: true,
       fillColor: Theme.of(context).cardColor.withValues(alpha: 0.5),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.grey.withValues(alpha: 0.3)),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.grey.withValues(alpha: 0.3)),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFFE53935), width: 2),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.red.shade300),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Colors.red, width: 2),
-      ),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.withValues(alpha: 0.3))),
+      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.withValues(alpha: 0.3))),
+      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE53935), width: 2)),
       labelStyle: TextStyle(color: Colors.grey[600], fontSize: 14),
       hintStyle: TextStyle(color: Colors.grey[400], fontSize: 13),
     );

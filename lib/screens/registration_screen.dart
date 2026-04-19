@@ -14,36 +14,19 @@ class _RegistrationScreenState extends State<RegistrationScreen>
   final _formKey = GlobalKey<FormState>();
   final _authService = AuthService();
 
-  // Account fields
+  // Controllers
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
-  // Vehicle fields
-  final _vehicleBrandController = TextEditingController();
-  final _vehicleModelController = TextEditingController();
-  final _licensePlateController = TextEditingController();
-
-  String _selectedVehicleType = 'Car';
   bool _isLoading = false;
   bool _obscurePassword = true;
-  bool _obscureConfirm = true;
   String? _errorMessage;
 
   late AnimationController _animController;
   late Animation<double> _fadeAnimation;
-
-  static const List<String> _vehicleTypes = [
-    'Car',
-    'Bike',
-    'Truck',
-    'Van',
-    'Auto Rickshaw',
-    'Bus',
-    'Other',
-  ];
 
   @override
   void initState() {
@@ -66,9 +49,6 @@ class _RegistrationScreenState extends State<RegistrationScreen>
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
-    _vehicleBrandController.dispose();
-    _vehicleModelController.dispose();
-    _licensePlateController.dispose();
     _animController.dispose();
     super.dispose();
   }
@@ -83,56 +63,22 @@ class _RegistrationScreenState extends State<RegistrationScreen>
 
     try {
       await _authService.signUp(
-        email: _emailController.text,
+        email: _emailController.text.trim(),
         password: _passwordController.text,
-        name: _nameController.text,
-        phone: _phoneController.text,
-        vehicleType: _selectedVehicleType,
-        vehicleBrand: _vehicleBrandController.text,
-        vehicleModel: _vehicleModelController.text.isNotEmpty
-            ? _vehicleModelController.text
-            : null,
-        licensePlate: _licensePlateController.text.isNotEmpty
-            ? _licensePlateController.text
-            : null,
+        name: _nameController.text.trim(),
+        phone: _phoneController.text.trim(),
       );
-
-      // Auth state listener in main.dart handles navigation
-      if (mounted) {
-        Navigator.of(context).popUntil((route) => route.isFirst);
-      }
+      if (mounted) Navigator.pop(context);
     } on FirebaseAuthException catch (e) {
-      String message;
-      switch (e.code) {
-        case 'email-already-in-use':
-          message = 'An account already exists with this email.';
-          break;
-        case 'weak-password':
-          message = 'Password is too weak. Use at least 6 characters.';
-          break;
-        case 'invalid-email':
-          message = 'Please enter a valid email address.';
-          break;
-        default:
-          message = e.message ?? 'Registration failed. Please try again.';
-      }
-      if (mounted) {
-        setState(() {
-          _errorMessage = message;
-        });
-      }
+      setState(() {
+        _errorMessage = e.message ?? 'Registration failed. Please try again.';
+        _isLoading = false;
+      });
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          _errorMessage = 'Something went wrong. Please try again.';
-        });
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      setState(() {
+        _errorMessage = 'Something went wrong. Please try again.';
+        _isLoading = false;
+      });
     }
   }
 
@@ -141,7 +87,6 @@ class _RegistrationScreenState extends State<RegistrationScreen>
     final screenSize = MediaQuery.sizeOf(context);
     final screenWidth = screenSize.width;
     final screenHeight = screenSize.height;
-    final isSmallPhone = screenWidth < 360;
     final isTablet = screenWidth >= 600;
 
     return Scaffold(
@@ -163,417 +108,11 @@ class _RegistrationScreenState extends State<RegistrationScreen>
               child: Column(
                 children: [
                   SizedBox(height: screenHeight * 0.03),
-
-                  // Header
-                  Row(
-                    children: [
-                      GestureDetector(
-                        onTap: () => Navigator.pop(context),
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: const Color.fromRGBO(255, 255, 255, 0.15),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: const Icon(
-                            Icons.arrow_back,
-                            color: Colors.white,
-                            size: 22,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "Create Account",
-                            style: TextStyle(
-                              fontSize: isTablet
-                                  ? 28
-                                  : (isSmallPhone ? 20 : 24),
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            "Fill in your details to get started",
-                            style: TextStyle(
-                              fontSize: isTablet ? 15 : 13,
-                              color: const Color.fromRGBO(255, 255, 255, 0.8),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-
+                  _buildHeader(isTablet),
                   SizedBox(height: screenHeight * 0.03),
-
-                  // Registration Form Card
-                  Container(
-                    padding: EdgeInsets.all(
-                      isTablet ? 28 : (isSmallPhone ? 18 : 22),
-                    ),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).cardColor,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.15),
-                          blurRadius: 30,
-                          offset: const Offset(0, 10),
-                        ),
-                      ],
-                    ),
-                    child: Form(
-                      key: _formKey,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          // Error banner
-                          if (_errorMessage != null) ...[
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: Colors.red.shade50,
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(color: Colors.red.shade200),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.error_outline,
-                                    color: Colors.red.shade700,
-                                    size: 20,
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: Text(
-                                      _errorMessage!,
-                                      style: TextStyle(
-                                        color: Colors.red.shade700,
-                                        fontSize: 13,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                          ],
-
-                          // === SECTION: Personal Details ===
-                          _sectionHeader(
-                            icon: Icons.person_outline,
-                            title: "Personal Details",
-                            isTablet: isTablet,
-                          ),
-                          const SizedBox(height: 14),
-
-                          // Full Name
-                          TextFormField(
-                            controller: _nameController,
-                            textInputAction: TextInputAction.next,
-                            textCapitalization: TextCapitalization.words,
-                            decoration: _inputDecoration(
-                              label: "Full Name",
-                              hint: "e.g., John Doe",
-                              icon: Icons.badge_outlined,
-                            ),
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'Please enter your name';
-                              }
-                              if (value.trim().length < 2) {
-                                return 'Name must be at least 2 characters';
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 14),
-
-                          // Phone Number
-                          TextFormField(
-                            controller: _phoneController,
-                            keyboardType: TextInputType.phone,
-                            textInputAction: TextInputAction.next,
-                            decoration: _inputDecoration(
-                              label: "Phone Number",
-                              hint: "e.g., 9876543210",
-                              icon: Icons.phone_outlined,
-                            ),
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'Phone number is required';
-                              }
-                              final cleaned = value.trim().replaceAll(
-                                RegExp(r'[\s\-\(\)\+]'),
-                                '',
-                              );
-                              if (cleaned.length < 10) {
-                                return 'Enter a valid phone number';
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 14),
-
-                          // Email
-                          TextFormField(
-                            controller: _emailController,
-                            keyboardType: TextInputType.emailAddress,
-                            textInputAction: TextInputAction.next,
-                            decoration: _inputDecoration(
-                              label: "Email",
-                              hint: "you@example.com",
-                              icon: Icons.email_outlined,
-                            ),
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'Please enter your email';
-                              }
-                              if (!RegExp(
-                                r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
-                              ).hasMatch(value.trim())) {
-                                return 'Please enter a valid email';
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 14),
-
-                          // Password
-                          TextFormField(
-                            controller: _passwordController,
-                            obscureText: _obscurePassword,
-                            textInputAction: TextInputAction.next,
-                            decoration:
-                                _inputDecoration(
-                                  label: "Password",
-                                  hint: "Min. 6 characters",
-                                  icon: Icons.lock_outline,
-                                ).copyWith(
-                                  suffixIcon: IconButton(
-                                    icon: Icon(
-                                      _obscurePassword
-                                          ? Icons.visibility_off_outlined
-                                          : Icons.visibility_outlined,
-                                      color: Colors.grey[500],
-                                      size: 20,
-                                    ),
-                                    onPressed: () {
-                                      setState(() {
-                                        _obscurePassword = !_obscurePassword;
-                                      });
-                                    },
-                                  ),
-                                ),
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Please enter a password';
-                              }
-                              if (value.length < 6) {
-                                return 'Password must be at least 6 characters';
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 14),
-
-                          // Confirm Password
-                          TextFormField(
-                            controller: _confirmPasswordController,
-                            obscureText: _obscureConfirm,
-                            textInputAction: TextInputAction.next,
-                            decoration:
-                                _inputDecoration(
-                                  label: "Confirm Password",
-                                  hint: "Re-enter your password",
-                                  icon: Icons.lock_outline,
-                                ).copyWith(
-                                  suffixIcon: IconButton(
-                                    icon: Icon(
-                                      _obscureConfirm
-                                          ? Icons.visibility_off_outlined
-                                          : Icons.visibility_outlined,
-                                      color: Colors.grey[500],
-                                      size: 20,
-                                    ),
-                                    onPressed: () {
-                                      setState(() {
-                                        _obscureConfirm = !_obscureConfirm;
-                                      });
-                                    },
-                                  ),
-                                ),
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Please confirm your password';
-                              }
-                              if (value != _passwordController.text) {
-                                return 'Passwords do not match';
-                              }
-                              return null;
-                            },
-                          ),
-
-                          const SizedBox(height: 24),
-
-                          // === SECTION: Vehicle Details ===
-                          _sectionHeader(
-                            icon: Icons.directions_car_outlined,
-                            title: "Vehicle Details",
-                            isTablet: isTablet,
-                          ),
-                          const SizedBox(height: 14),
-
-                          // Vehicle Type Dropdown
-                          DropdownButtonFormField<String>(
-                            initialValue: _selectedVehicleType,
-                            decoration: _inputDecoration(
-                              label: "Vehicle Type",
-                              hint: "Select your vehicle type",
-                              icon: Icons.category_outlined,
-                            ),
-                            items: _vehicleTypes.map((type) {
-                              return DropdownMenuItem(
-                                value: type,
-                                child: Text(type),
-                              );
-                            }).toList(),
-                            onChanged: (value) {
-                              if (value != null) {
-                                setState(() {
-                                  _selectedVehicleType = value;
-                                });
-                              }
-                            },
-                          ),
-                          const SizedBox(height: 14),
-
-                          // Vehicle Brand
-                          TextFormField(
-                            controller: _vehicleBrandController,
-                            textInputAction: TextInputAction.next,
-                            textCapitalization: TextCapitalization.words,
-                            decoration: _inputDecoration(
-                              label: "Vehicle Brand",
-                              hint: "e.g., Toyota, Maruti, Honda",
-                              icon: Icons.branding_watermark_outlined,
-                            ),
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'Please enter your vehicle brand';
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 14),
-
-                          // Vehicle Model (Optional)
-                          TextFormField(
-                            controller: _vehicleModelController,
-                            textInputAction: TextInputAction.next,
-                            textCapitalization: TextCapitalization.words,
-                            decoration: _inputDecoration(
-                              label: "Vehicle Model (optional)",
-                              hint: "e.g., Swift, Civic, Innova",
-                              icon: Icons.info_outline,
-                            ),
-                          ),
-                          const SizedBox(height: 14),
-
-                          // License Plate (Optional)
-                          TextFormField(
-                            controller: _licensePlateController,
-                            textInputAction: TextInputAction.done,
-                            textCapitalization: TextCapitalization.characters,
-                            decoration: _inputDecoration(
-                              label: "License Plate (optional)",
-                              hint: "e.g., TN 01 AB 1234",
-                              icon: Icons.confirmation_number_outlined,
-                            ),
-                          ),
-
-                          const SizedBox(height: 28),
-
-                          // Register Button
-                          SizedBox(
-                            height: isTablet ? 54 : 48,
-                            child: ElevatedButton(
-                              onPressed: _isLoading ? null : _register,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFFE53935),
-                                foregroundColor: Colors.white,
-                                disabledBackgroundColor: const Color(
-                                  0xFFE57373,
-                                ),
-                                elevation: 2,
-                                shadowColor: const Color.fromRGBO(
-                                  229,
-                                  57,
-                                  53,
-                                  0.4,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(14),
-                                ),
-                              ),
-                              child: _isLoading
-                                  ? const SizedBox(
-                                      width: 22,
-                                      height: 22,
-                                      child: CircularProgressIndicator(
-                                        color: Colors.white,
-                                        strokeWidth: 2.5,
-                                      ),
-                                    )
-                                  : Text(
-                                      "CREATE ACCOUNT",
-                                      style: TextStyle(
-                                        fontSize: isTablet ? 17 : 15,
-                                        fontWeight: FontWeight.bold,
-                                        letterSpacing: 1.5,
-                                      ),
-                                    ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
+                  _buildFormCard(isTablet),
                   SizedBox(height: screenHeight * 0.02),
-
-                  // Back to Login link
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        "Already have an account?  ",
-                        style: TextStyle(
-                          color: const Color.fromRGBO(255, 255, 255, 0.8),
-                          fontSize: isTablet ? 15 : 13,
-                        ),
-                      ),
-                      GestureDetector(
-                        onTap: () => Navigator.pop(context),
-                        child: Text(
-                          "Login",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: isTablet ? 15 : 13,
-                            decoration: TextDecoration.underline,
-                            decorationColor: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-
+                  _buildLoginLink(isTablet),
                   SizedBox(height: screenHeight * 0.04),
                 ],
               ),
@@ -584,35 +123,155 @@ class _RegistrationScreenState extends State<RegistrationScreen>
     );
   }
 
-  Widget _sectionHeader({
-    required IconData icon,
-    required String title,
-    required bool isTablet,
-  }) {
+  Widget _buildHeader(bool isTablet) {
     return Row(
       children: [
-        Container(
-          padding: const EdgeInsets.all(6),
-          decoration: BoxDecoration(
-            color: const Color(0xFFE53935).withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(8),
+        GestureDetector(
+          onTap: () => Navigator.pop(context),
+          child: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(color: const Color.fromRGBO(255, 255, 255, 0.15), borderRadius: BorderRadius.circular(10)),
+            child: const Icon(Icons.arrow_back, color: Colors.white, size: 22),
           ),
-          child: Icon(icon, color: const Color(0xFFE53935), size: 18),
         ),
-        const SizedBox(width: 10),
-        Text(
-          title,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text("Create Account", style: TextStyle(fontSize: isTablet ? 28 : 24, fontWeight: FontWeight.bold, color: Colors.white)),
+              const SizedBox(height: 2),
+              Text("Fill in your details to get started", style: TextStyle(fontSize: isTablet ? 15 : 13, color: const Color.fromRGBO(255, 255, 255, 0.8))),
+            ],
+          ),
         ),
       ],
     );
   }
 
-  InputDecoration _inputDecoration({
-    required String label,
-    required String hint,
-    required IconData icon,
-  }) {
+  Widget _buildFormCard(bool isTablet) {
+    return Container(
+      padding: EdgeInsets.all(isTablet ? 28 : 22),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 30, offset: const Offset(0, 10)),
+        ],
+      ),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (_errorMessage != null) _buildErrorBanner(),
+            _sectionHeader(icon: Icons.person_outline, title: "Personal Details"),
+            const SizedBox(height: 14),
+            _buildTextField(_nameController, "Full Name", Icons.badge_outlined),
+            const SizedBox(height: 14),
+            _buildTextField(_phoneController, "Phone Number", Icons.phone_outlined, keyboardType: TextInputType.phone),
+            const SizedBox(height: 14),
+            _buildTextField(_emailController, "Email", Icons.email_outlined, keyboardType: TextInputType.emailAddress),
+            const SizedBox(height: 24),
+            _sectionHeader(icon: Icons.lock_outline, title: "Security"),
+            const SizedBox(height: 14),
+            _buildPasswordField(_passwordController, "Password"),
+            const SizedBox(height: 14),
+            _buildPasswordField(_confirmPasswordController, "Confirm Password", isConfirm: true),
+            const SizedBox(height: 28),
+            _buildRegisterButton(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTextField(TextEditingController controller, String label, IconData icon, {TextInputType? keyboardType}) {
+    return TextFormField(
+      controller: controller,
+      keyboardType: keyboardType,
+      textInputAction: TextInputAction.next,
+      decoration: _inputDecoration(label: label, hint: "Enter your $label", icon: icon),
+      validator: (val) => (val == null || val.trim().isEmpty) ? 'Required' : null,
+    );
+  }
+
+  Widget _buildPasswordField(TextEditingController controller, String label, {bool isConfirm = false}) {
+    return TextFormField(
+      controller: controller,
+      obscureText: _obscurePassword,
+      textInputAction: isConfirm ? TextInputAction.done : TextInputAction.next,
+      decoration: _inputDecoration(label: label, hint: "Enter $label", icon: Icons.lock_outline).copyWith(
+        suffixIcon: IconButton(
+          icon: Icon(_obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined, color: Colors.grey[500], size: 20),
+          onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+        ),
+      ),
+      validator: (val) {
+        if (val == null || val.isEmpty) return 'Required';
+        if (val.length < 6) return 'Mini 6 chars';
+        if (isConfirm && val != _passwordController.text) return 'Mismatch';
+        return null;
+      },
+    );
+  }
+
+  Widget _buildRegisterButton() {
+    return SizedBox(
+      height: 48,
+      child: ElevatedButton(
+        onPressed: _isLoading ? null : _register,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFFE53935),
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        ),
+        child: _isLoading
+            ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
+            : const Text("SIGN UP", style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+      ),
+    );
+  }
+
+  Widget _buildLoginLink(bool isTablet) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text("Already have an account?  ", style: TextStyle(color: const Color.fromRGBO(255, 255, 255, 0.8), fontSize: isTablet ? 15 : 13)),
+        GestureDetector(
+          onTap: () => Navigator.pop(context),
+          child: const Text("Login", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, decoration: TextDecoration.underline)),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildErrorBanner() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(color: Colors.red.shade50, borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.red.shade200)),
+      child: Row(
+        children: [
+          Icon(Icons.error_outline, color: Colors.red.shade700, size: 20),
+          const SizedBox(width: 10),
+          Expanded(child: Text(_errorMessage!, style: TextStyle(color: Colors.red.shade700, fontSize: 13))),
+        ],
+      ),
+    );
+  }
+
+  Widget _sectionHeader({required IconData icon, required String title}) {
+    return Row(
+      children: [
+        Icon(icon, color: const Color(0xFFE53935), size: 18),
+        const SizedBox(width: 10),
+        Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+      ],
+    );
+  }
+
+  InputDecoration _inputDecoration({required String label, required String hint, required IconData icon}) {
     return InputDecoration(
       labelText: label,
       hintText: hint,
@@ -620,28 +279,12 @@ class _RegistrationScreenState extends State<RegistrationScreen>
       filled: true,
       fillColor: Theme.of(context).cardColor.withValues(alpha: 0.5),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.grey.withValues(alpha: 0.3)),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.grey.withValues(alpha: 0.3)),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFFE53935), width: 2),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.red.shade300),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Colors.red, width: 2),
-      ),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.withValues(alpha: 0.3))),
+      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.withValues(alpha: 0.3))),
+      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE53935), width: 2)),
       labelStyle: TextStyle(color: Colors.grey[600], fontSize: 14),
-      hintStyle: TextStyle(color: Colors.grey[400], fontSize: 13),
     );
   }
 }
+
+

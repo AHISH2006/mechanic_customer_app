@@ -17,21 +17,33 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
   late TextEditingController _phoneController;
+  late TextEditingController _vehicleBrandController;
+  late TextEditingController _vehicleModelController;
+  late TextEditingController _licensePlateController;
+  
+  String _selectedVehicleType = 'Car';
   final AuthService _authService = AuthService();
   bool _isLoading = false;
   File? _selectedImage;
   String? _profileImageUrl;
   final ImagePicker _picker = ImagePicker();
 
+  static const List<String> _vehicleTypes = [
+    'Car', 'Bike', 'Truck', 'Van', 'Auto Rickshaw', 'Bus', 'Other',
+  ];
+
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(
-      text: widget.initialProfile['name'],
-    );
-    _phoneController = TextEditingController(
-      text: widget.initialProfile['phone'],
-    );
+    _nameController = TextEditingController(text: widget.initialProfile['name']);
+    _phoneController = TextEditingController(text: widget.initialProfile['phone']);
+    _vehicleBrandController = TextEditingController(text: widget.initialProfile['vehicleBrand']);
+    _vehicleModelController = TextEditingController(text: widget.initialProfile['vehicleModel']);
+    _licensePlateController = TextEditingController(text: widget.initialProfile['licensePlate']);
+    
+    _selectedVehicleType = widget.initialProfile['vehicleType'] ?? 'Car';
+    if (_selectedVehicleType.isEmpty) _selectedVehicleType = 'Car';
+    
     _profileImageUrl = widget.initialProfile['profileImageUrl'];
   }
 
@@ -39,6 +51,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
+    _vehicleBrandController.dispose();
+    _vehicleModelController.dispose();
+    _licensePlateController.dispose();
     super.dispose();
   }
 
@@ -65,11 +80,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           uid: user.uid,
           name: _nameController.text.trim(),
           phone: _phoneController.text.trim(),
-          email: user.email ?? '',
-          vehicleType: widget.initialProfile['vehicleType'] ?? 'Car',
-          vehicleBrand: widget.initialProfile['vehicleBrand'] ?? '',
-          vehicleModel: widget.initialProfile['vehicleModel'],
-          licensePlate: widget.initialProfile['licensePlate'],
+          email: user.email ?? widget.initialProfile['email'] ?? '',
+          vehicleType: _selectedVehicleType,
+          vehicleBrand: _vehicleBrandController.text.trim(),
+          vehicleModel: _vehicleModelController.text.trim(),
+          licensePlate: _licensePlateController.text.trim(),
         );
 
         // Upload Profile Photo if changed
@@ -123,68 +138,71 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         child: Form(
           key: _formKey,
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              GestureDetector(
-                onTap: _pickImage,
-                child: Stack(
-                  children: [
-                    CircleAvatar(
-                      radius: 50,
-                      backgroundColor: Colors.blue.withValues(alpha: 0.1),
-                      backgroundImage: _selectedImage != null
-                          ? FileImage(_selectedImage!)
-                          : (_profileImageUrl != null && _profileImageUrl!.isNotEmpty)
-                              ? NetworkImage(_profileImageUrl!) as ImageProvider
-                              : null,
-                      child: _selectedImage == null && 
-                             (_profileImageUrl == null || _profileImageUrl!.isEmpty)
-                          ? const Icon(Icons.person, size: 50, color: Colors.blue)
-                          : null,
-                    ),
-                    Positioned(
-                      bottom: 0,
-                      right: 0,
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: const BoxDecoration(
-                          color: Colors.blue,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.camera_alt,
-                          color: Colors.white,
-                          size: 20,
+              Center(
+                child: GestureDetector(
+                  onTap: _pickImage,
+                  child: Stack(
+                    children: [
+                      CircleAvatar(
+                        radius: 50,
+                        backgroundColor: Colors.blue.withValues(alpha: 0.1),
+                        backgroundImage: _selectedImage != null
+                            ? FileImage(_selectedImage!)
+                            : (_profileImageUrl != null && _profileImageUrl!.isNotEmpty)
+                                ? NetworkImage(_profileImageUrl!) as ImageProvider
+                                : null,
+                        child: _selectedImage == null && 
+                               (_profileImageUrl == null || _profileImageUrl!.isEmpty)
+                            ? const Icon(Icons.person, size: 50, color: Colors.blue)
+                            : null,
+                      ),
+                      Positioned(
+                        bottom: 0,
+                        right: 0,
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: const BoxDecoration(
+                            color: Colors.blue,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.camera_alt,
+                            color: Colors.white,
+                            size: 20,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(height: 30),
-              TextFormField(
-                controller: _nameController,
-                decoration: InputDecoration(
-                  labelText: "Full Name",
-                  prefixIcon: const Icon(Icons.person_outline),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                validator: (val) => val!.isEmpty ? 'Enter your name' : null,
+              
+              const Text("Personal Information", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 15),
+              _buildTextField(_nameController, "Full Name", Icons.person_outline),
+              const SizedBox(height: 15),
+              _buildTextField(_phoneController, "Phone Number", Icons.phone_outlined, keyboardType: TextInputType.phone),
+              
+              const SizedBox(height: 30),
+              const Text("Vehicle Details", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 15),
+              
+              DropdownButtonFormField<String>(
+                initialValue: _selectedVehicleType,
+                decoration: _inputDecoration("Vehicle Type", Icons.category_outlined),
+                items: _vehicleTypes.map((type) => DropdownMenuItem(value: type, child: Text(type))).toList(),
+                onChanged: (val) => setState(() => _selectedVehicleType = val!),
               ),
-              const SizedBox(height: 20),
-              TextFormField(
-                controller: _phoneController,
-                keyboardType: TextInputType.phone,
-                decoration: InputDecoration(
-                  labelText: "Phone Number",
-                  prefixIcon: const Icon(Icons.phone_outlined),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                validator: (val) => val!.isEmpty ? 'Enter your phone' : null,
-              ),
+              const SizedBox(height: 15),
+              _buildTextField(_vehicleBrandController, "Vehicle Brand", Icons.branding_watermark_outlined),
+              const SizedBox(height: 15),
+              _buildTextField(_vehicleModelController, "Vehicle Model", Icons.info_outline),
+              const SizedBox(height: 15),
+              _buildTextField(_licensePlateController, "License Plate", Icons.confirmation_number_outlined),
+              
               const SizedBox(height: 40),
               SizedBox(
                 width: double.infinity,
@@ -202,10 +220,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       ? const CircularProgressIndicator(color: Colors.white)
                       : const Text(
                           "SAVE CHANGES",
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                         ),
                 ),
               ),
@@ -215,4 +230,23 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       ),
     );
   }
+
+  Widget _buildTextField(TextEditingController controller, String label, IconData icon, {TextInputType keyboardType = TextInputType.text}) {
+    return TextFormField(
+      controller: controller,
+      keyboardType: keyboardType,
+      decoration: _inputDecoration(label, icon),
+      validator: (val) => (label.contains('optional') || !label.contains('Name')) ? null : (val!.isEmpty ? 'Required field' : null),
+    );
+  }
+
+  InputDecoration _inputDecoration(String label, IconData icon) {
+    return InputDecoration(
+      labelText: label,
+      prefixIcon: Icon(icon),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+    );
+  }
 }
+
