@@ -10,8 +10,6 @@
                 /*! normalize.css v7.0.0 | MIT License | github.com/necolas/normalize.css */
 html {
     line-height: 1.15;
-    -ms-text-size-adjust: 100%;
-    -webkit-text-size-adjust: 100%
 }
 
 body {
@@ -48,7 +46,7 @@ pre {
 
 a {
     background-color: transparent;
-    -webkit-text-decoration-skip: objects
+    text-decoration-skip-ink: auto;
 }
 
 abbr[title] {
@@ -297,6 +295,7 @@ ul .tree-btn {
 }
 
 .invisible-text {
+    -webkit-user-select: all;
     user-select: all; /* Allow the text to be selectable */
     color: transparent; /* Hide the text */
     text-indent: -9999px; /* Move the text out of view */
@@ -495,8 +494,6 @@ html {
 body {
     color: #02303A;
     background-color: #ffffff;
-    -webkit-text-size-adjust: 100%;
-    -ms-text-size-adjust: 100%;
     -webkit-font-smoothing: antialiased;
 }
 
@@ -628,6 +625,7 @@ code + .copy-button {
 }
 
 .java-exception-part-toggle {
+    -webkit-user-select: none;
     user-select: none;
     cursor: pointer;
     border-radius: 2px;
